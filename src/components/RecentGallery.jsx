@@ -1,33 +1,33 @@
 import React from 'react';
 
 const RecentGallery = ({ photos, onSelect, onClear }) => {
-    if (!photos || photos.length === 0) return null;
+  if (!photos || photos.length === 0) return null;
 
-    return (
-        <div className="gallery-container">
-            <div className="gallery-header">
-                <h3>Recent</h3>
-                <button onClick={onClear} className="clear-btn" aria-label="Clear recent photos">
-                    🗑️
-                </button>
+  return (
+    <div className="gallery-container">
+      <div className="gallery-header">
+        <h3>Recent</h3>
+        <button onClick={onClear} className="clear-btn" aria-label="Clear recent photos">
+          🗑️
+        </button>
+      </div>
+
+      <div className="gallery-scroll">
+        <div className="gallery-items">
+          {photos.map((photo, index) => (
+            <div
+              key={photo.id}
+              className="gallery-item"
+              onClick={() => onSelect(photo)}
+              style={{ zIndex: photos.length - index }}
+            >
+              <img src={photo.data} alt={`Recent polaroid ${index + 1}`} />
             </div>
+          ))}
+        </div>
+      </div>
 
-            <div className="gallery-scroll">
-                <div className="gallery-items">
-                    {photos.map((photo, index) => (
-                        <div
-                            key={photo.id}
-                            className="gallery-item"
-                            onClick={() => onSelect(photo)}
-                            style={{ zIndex: photos.length - index }}
-                        >
-                            <img src={photo.data} alt={`Recent polaroid ${index + 1}`} />
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            <style>{`
+      <style>{`
         .gallery-container {
           width: 100%;
           max-width: 400px;
@@ -90,8 +90,9 @@ const RecentGallery = ({ photos, onSelect, onClear }) => {
         .gallery-item {
           flex: 0 0 80px; /* Fixed width for cards */
           height: 96px; /* Aspect ratio roughly matching polaroid */
-          background: white;
-          padding: 4px 4px 12px 4px; /* Polaroid frame style */
+          /* Removed background and padding to avoid double-polaroid effect */
+          /* background: white; */
+          /* padding: 4px 4px 12px 4px; */ 
           box-shadow: 0 2px 8px rgba(0,0,0,0.3);
           transform: rotate(-2deg);
           margin-right: -40px; /* Negative margin for overlap */
@@ -127,8 +128,8 @@ const RecentGallery = ({ photos, onSelect, onClear }) => {
           transform: rotate(0) scale(1.1) translateY(-10px);
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default RecentGallery;

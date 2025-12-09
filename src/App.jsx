@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import html2canvas from 'html2canvas'
 import './index.css'
 import Camera from './components/Camera'
@@ -15,9 +15,10 @@ function App() {
   const [filterEnabled, setFilterEnabled] = useState(true);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [currentPhotoId, setCurrentPhotoId] = useState(null);
   const frameRef = useRef(null);
 
-  const { photos, addPhoto, removePhoto, clearPhotos } = useRecentPhotos();
+  const { photos, addPhoto, updatePhoto, removePhoto, clearPhotos } = useRecentPhotos();
 
   // Check if user has used camera before
   const hasUsedCamera = localStorage.getItem('has_used_camera') === 'true';
@@ -30,6 +31,7 @@ function App() {
 
   const handleCapture = (imageSrc) => {
     setPhoto(imageSrc);
+    setCurrentPhotoId(null); // Reset session ID for new photo
     setMode('developing');
 
     // Visual wait (10s)
@@ -38,16 +40,15 @@ function App() {
     }, 10000);
   };
 
-  const handleSave = async () => {
+  // Unified save function for both Auto-save and User Download
+  const saveCurrentPolaroid = async (download = false) => {
     if (!photo) return;
 
     try {
-      // Manually create the polaroid image to ensure high quality and filter application
+      // Manually create the polaroid image
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      // Polaroid dimensions (approx 3.5x4.2 ratio)
-      // Let's make it high res: 1000px wide
       const width = 1000;
       const height = 1200;
       const padding = 60;
@@ -56,7 +57,7 @@ function App() {
       canvas.width = width;
       canvas.height = height;
 
-      // 1. Draw Background (White Frame)
+      // 1. Draw Background
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, width, height);
 
@@ -65,20 +66,19 @@ function App() {
       img.src = photo;
       await new Promise(resolve => img.onload = resolve);
 
-      const imgSize = width - (padding * 2); // Square image area
+      const imgSize = width - (padding * 2);
 
       // Draw raw image first
       ctx.drawImage(img, padding, padding, imgSize, imgSize);
 
-      // 3. Apply Pixel Filter (Robust fallback for ctx.filter)
+      // 3. Apply Pixel Filter
       if (filterEnabled) {
         try {
           const imageData = ctx.getImageData(padding, padding, imgSize, imgSize);
           const filteredData = applyPolaroidFilter(imageData);
           ctx.putImageData(filteredData, padding, padding);
         } catch (e) {
-          console.error("Filter application failed:", e);
-          // Fallback to ctx.filter if pixel manipulation fails (e.g. CORS, though unlikely with local base64)
+          // Fallback
           ctx.save();
           ctx.filter = 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)';
           ctx.drawImage(img, padding, padding, imgSize, imgSize);
@@ -89,7 +89,6 @@ function App() {
       // 4. Draw Caption
       if (caption) {
         ctx.fillStyle = '#333333';
-        // Map font selection to actual font family
         const fontMap = {
           'Special Elite': 'Special Elite',
           'Caveat': 'Caveat',
@@ -104,39 +103,63 @@ function App() {
 
       const finalImage = canvas.toDataURL('image/jpeg', 0.8);
 
-      // Save to recent photos
-      addPhoto(finalImage);
+      // Save/Update in Storage (Auto-save)
+      if (currentPhotoId) {
+        updatePhoto(currentPhotoId, {
+          data: finalImage,
+          raw: photo, // Keep raw for re-editing
+          caption,
+          filterEnabled,
+          font,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        const newId = await addPhoto({
+          data: finalImage,
+          raw: photo,
+          caption,
+          filterEnabled,
+          font,
+          timestamp: new Date().toISOString()
+        });
+        setCurrentPhotoId(newId);
+      }
 
-      // 5. Convert to Blob/File for Sharing (JPEG for better iOS compatibility)
-      canvas.toBlob(async (blob) => {
-        const timestamp = Date.now();
-        const safeCaption = caption ? caption.replace(/[^a-z0-9]/gi, '_').toLowerCase() : '';
-        const filename = safeCaption ? `polaroid_${safeCaption}.jpg` : `polaroid-${timestamp}.jpg`;
+      // 5. Download / Share if requested
+      if (download) {
+        canvas.toBlob(async (blob) => {
+          const timestamp = Date.now();
+          const safeCaption = caption ? caption.replace(/[^a-z0-9]/gi, '_').toLowerCase() : '';
+          const filename = safeCaption ? `polaroid_${safeCaption}.jpg` : `polaroid-${timestamp}.jpg`;
+          const file = new File([blob], filename, { type: 'image/jpeg' });
 
-        const file = new File([blob], filename, { type: 'image/jpeg' });
-
-        // Use Web Share API (only share the image file, caption is already embedded)
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file]
-            });
-          } catch (err) {
-            if (err.name !== 'AbortError') {
-              console.error("Share failed:", err);
-              saveAsDownload(canvas, filename);
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({ files: [file] });
+            } catch (err) {
+              if (err.name !== 'AbortError') saveAsDownload(canvas, filename);
             }
+          } else {
+            saveAsDownload(canvas, filename);
           }
-        } else {
-          saveAsDownload(canvas, filename);
-        }
-      }, 'image/jpeg', 0.9); // 90% quality JPEG
-
+        }, 'image/jpeg', 0.9);
+      }
     } catch (err) {
       console.error("Error generating polaroid:", err);
-      alert("Could not save image. Please try again.");
     }
   };
+
+  const handleSave = () => saveCurrentPolaroid(true);
+
+  // Auto-save effect: Trigger when entering result mode or changing caption/settings
+  useEffect(() => {
+    if (mode === 'result' && photo) {
+      const timer = setTimeout(() => {
+        saveCurrentPolaroid(false);
+      }, 1000); // Debounce 1s
+      return () => clearTimeout(timer);
+    }
+  }, [mode, photo, caption, filterEnabled, font, currentPhotoId]);
 
   const saveAsDownload = (canvas, filename) => {
     const link = document.createElement('a');
@@ -167,20 +190,32 @@ function App() {
   };
 
   const handleSelectRecent = (recentPhoto) => {
-    // NOTE: For now, we just load the image back into 'photo' state and go to result mode.
-    // This won't have the original caption unless we stored it separately.
-    // For MVP, we treat it as a developed photo.
-    if (recentPhoto && recentPhoto.data) {
+    // If we have proper structure
+    if (recentPhoto.raw) {
+      setPhoto(recentPhoto.raw);
+      setCaption(recentPhoto.caption || '');
+      if (recentPhoto.font) setFont(recentPhoto.font);
+      if (recentPhoto.filterEnabled !== undefined) setFilterEnabled(recentPhoto.filterEnabled);
+    } else {
+      // Legacy: treat as raw, but it's likely already framed. 
+      // Best effort: load it, clear caption (since it's baked in)
       setPhoto(recentPhoto.data);
-      setMode('result');
-      setCaption(''); // Reset caption as we don't store it yet
+      setCaption('');
     }
+    // Always set ID to enable updates instead of duplication
+    setCurrentPhotoId(recentPhoto.id);
+    setMode('result');
   };
 
   return (
     <main>
-      <header style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+      <header style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1rem' }}>
         <h1>Digital Polaroid</h1>
+        {!('ontouchstart' in window || navigator.maxTouchPoints > 0) && (
+          <p style={{ color: '#666', fontSize: '0.8rem', margin: '0.5rem 0 0 0' }}>
+            Works best on mobile devices
+          </p>
+        )}
       </header>
 
       {mode === 'camera' && !cameraEnabled && (

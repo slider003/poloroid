@@ -56,16 +56,16 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true }
       </button>
 
       {/* Flash Toggle (Top Right) */}
-      {supportsFlash && (
-        <button
-          className={`control-btn flash-btn ${isImmersive ? 'hidden' : ''}`}
-          onClick={toggleFlash}
-          aria-label="Toggle flash"
-          style={{ opacity: flashOn ? 1 : 0.5 }}
-        >
-          {flashOn ? '⚡' : '⚡'}
-        </button>
-      )}
+
+      <button
+        className={`control-btn flash-btn ${isImmersive ? 'hidden' : ''}`}
+        onClick={toggleFlash}
+        aria-label="Toggle flash"
+        style={{ opacity: flashOn ? 1 : (supportsFlash ? 0.7 : 0.3) }}
+        disabled={!supportsFlash}
+      >
+        {flashOn ? '⚡' : '⚡'}
+      </button>
 
       {/* Filter Toggle (Bottom Left, moved up slightly) */}
       <button

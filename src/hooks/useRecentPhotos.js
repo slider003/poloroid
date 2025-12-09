@@ -1,42 +1,63 @@
 import { useState, useEffect, useCallback } from 'react';
+import { get, set } from 'idb-keyval';
 
 const STORAGE_KEY = 'polaroid_recent_photos';
 const MAX_PHOTOS = 10;
 
 export const useRecentPhotos = () => {
     const [photos, setPhotos] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Load photos from local storage on mount
+    // Load photos from indexedDB on mount
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                setPhotos(JSON.parse(stored));
+        const loadPhotos = async () => {
+            try {
+                const stored = await get(STORAGE_KEY);
+                if (stored) {
+                    setPhotos(stored);
+                }
+            } catch (e) {
+                console.error("Failed to load recent photos:", e);
+            } finally {
+                setLoading(false);
             }
-        } catch (e) {
-            console.error("Failed to load recent photos:", e);
-        }
+        };
+        loadPhotos();
     }, []);
 
-    // Save to local storage whenever photos change
-    const saveToStorage = (newPhotos) => {
+    // Save to indexedDB helper
+    const saveToStorage = async (newPhotos) => {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newPhotos));
+            await set(STORAGE_KEY, newPhotos);
         } catch (e) {
             console.error("Failed to save recent photos:", e);
-            // If quota exceeded, we might want to alert or silently fail.
-            // For now, silent fail is safer for UX than crashing.
         }
     };
 
-    const addPhoto = useCallback((photoData) => {
+    const addPhoto = useCallback((photoData, customId = null) => {
+        const id = customId || Date.now();
         setPhotos(prev => {
+            // Check if we are updating an existing photo (deduplication by ID if provided in data, though currently just data string)
+            // But wait, the App passes a data URL string. We wrap it in an object.
+            // Strategies for "Update": Use a persistent ID for the current session photo.
+            // For now, let's just accept the new photo.
+
             const newPhoto = {
-                id: Date.now(),
-                data: photoData,
-                timestamp: new Date().toISOString()
+                id: id,
+                timestamp: new Date().toISOString(),
+                ...photoData // Spread the properties (data, raw, caption, etc.)
             };
+
             const updated = [newPhoto, ...prev].slice(0, MAX_PHOTOS);
+            saveToStorage(updated);
+            return updated;
+        });
+        return id;
+    }, []);
+
+    const updatePhoto = useCallback((id, newData) => {
+        setPhotos(prev => {
+            const updated = prev.map(p => p.id === id ? { ...p, ...newData } : p);
             saveToStorage(updated);
             return updated;
         });
@@ -50,10 +71,10 @@ export const useRecentPhotos = () => {
         });
     }, []);
 
-    const clearPhotos = useCallback(() => {
+    const clearPhotos = useCallback(async () => {
         setPhotos([]);
-        localStorage.removeItem(STORAGE_KEY);
+        await set(STORAGE_KEY, []);
     }, []);
 
-    return { photos, addPhoto, removePhoto, clearPhotos };
+    return { photos, addPhoto, updatePhoto, removePhoto, clearPhotos, loading };
 };

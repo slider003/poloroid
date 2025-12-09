@@ -29,14 +29,13 @@ No downloads. No accounts. Just pure nostalgia.
 - **🎨 Polaroid Filter** - Automatic sepia, contrast, and saturation adjustments for that classic look
 - **✍️ Custom Captions** - Add personalized text with retro typewriter, handwritten, or clean fonts
 - **🔄 Camera Switching** - Toggle between front and back cameras on mobile devices
-- **💾 Smart Save System** - Confirmation prompts to prevent accidental photo loss
-- **🔐 Permission Memory** - Remembers your camera access preference for seamless use
+- **💾 Auto-Save & Gallery** - Smart auto-saving ensures you never lose a memory, stored safely on your device
+- **🔐 Privacy First** - Remembers your camera access preference for seamless use
 - **📤 Easy Sharing** - Native share integration on mobile, download fallback on desktop
 - **📱 Progressive Web App** - Install to home screen and use offline
-- **🎭 Filter Toggle** - Compare filtered vs. natural photos instantly
+- **⚡ Flash Mode** - Toggle flash for better lighting (supported devices only)
 
 ## 🚀 Quick Start
-
 ### Try It Now
 Visit **[slider003.github.io/poloroid](https://slider003.github.io/poloroid/)** and click "Allow" when prompted for camera access.
 
@@ -64,7 +63,8 @@ The app will be available at `http://localhost:5173`
 1. **📸 Snap** - Point your camera and click the shutter button
 2. **⏳ Develop** - Watch your photo emerge over 10 seconds, just like the real thing
 3. **✏️ Caption** - Add a personal message with your choice of retro fonts
-4. **💾 Save** - Download or share your Polaroid masterpiece
+4. **💾 Auto-Save** - Your photos are automatically saved to your local gallery
+5. **📤 Share** - Download or share your Polaroid masterpiece
 
 ## 🛠️ Tech Stack
 
@@ -72,11 +72,11 @@ The app will be available at `http://localhost:5173`
 |-----------|---------|
 | ⚛️ **React 19** | UI framework with modern hooks |
 | ⚡ **Vite 7** | Lightning-fast build tool and dev server |
+| 🗄️ **IndexedDB** | Robust local storage for high-quality images |
 | 🎨 **html2canvas** | High-quality image export with filters |
 | 📱 **vite-plugin-pwa** | Progressive Web App capabilities |
 | 🎥 **MediaDevices API** | Native camera access and switching |
 | 🔒 **Permissions API** | Smart permission state management |
-| 💾 **localStorage** | Persistent permission preferences |
 
 ## 📦 Project Structure
 
@@ -85,9 +85,11 @@ poloroid/
 ├── src/
 │   ├── components/
 │   │   ├── Camera.jsx          # Camera UI and controls
-│   │   └── PolaroidFrame.jsx   # Polaroid frame wrapper
+│   │   ├── PolaroidFrame.jsx   # Polaroid frame wrapper
+│   │   └── RecentGallery.jsx   # Gallery for saved photos
 │   ├── hooks/
-│   │   └── useCamera.js        # Camera logic & permission handling
+│   │   ├── useCamera.js        # Camera logic & permission handling
+│   │   └── useRecentPhotos.js  # IndexedDB storage management
 │   ├── utils/
 │   │   └── filters.js          # Pixel-level Polaroid filter
 │   ├── App.jsx                 # Main app orchestration
@@ -129,11 +131,12 @@ Unlike CSS filters, our approach ensures consistent output across all devices an
 | Mobile Safari | iOS 14.5+ | ✅ Full support |
 | Chrome Mobile | Android 90+ | ✅ Full support |
 
-**Requires:** Camera access, localStorage, ES6+ support
+**Requires:** Camera access, IndexedDB, ES6+ support
 
 ## 📝 Roadmap
 
-- [ ] Photo gallery with localStorage persistence
+- [x] Photo gallery with persistence
+- [x] Auto-save functionality
 - [ ] Custom filter intensity controls
 - [ ] Additional retro frame styles
 - [ ] AI-powered caption suggestions
