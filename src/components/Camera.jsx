@@ -2,7 +2,7 @@ import React from 'react';
 import { useCamera } from '../hooks/useCamera';
 
 const Camera = ({ onCapture }) => {
-  const { videoRef, error, isReady, takePhoto } = useCamera();
+  const { videoRef, error, isReady, takePhoto, switchCamera } = useCamera();
 
   const handleCapture = () => {
     const photo = takePhoto();
@@ -33,6 +33,14 @@ const Camera = ({ onCapture }) => {
         aria-label="Take photo"
       >
         <div className="shutter-inner"></div>
+      </button>
+
+      <button
+        className="switch-btn"
+        onClick={switchCamera}
+        aria-label="Switch camera"
+      >
+        🔄
       </button>
 
       <style>{`
@@ -76,6 +84,26 @@ const Camera = ({ onCapture }) => {
         .shutter-btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+        .switch-btn {
+          position: absolute;
+          bottom: 30px;
+          right: 20px;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+          border: none;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          color: white;
+          font-size: 1.2rem;
+          backdrop-filter: blur(4px);
+          transition: background 0.2s;
+        }
+        .switch-btn:hover {
+          background: rgba(255, 255, 255, 0.4);
         }
       `}</style>
     </div>

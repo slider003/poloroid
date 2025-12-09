@@ -5,12 +5,18 @@ export const useCamera = () => {
     const [stream, setStream] = useState(null);
     const [error, setError] = useState(null);
     const [isReady, setIsReady] = useState(false);
+    const [facingMode, setFacingMode] = useState('user');
 
     useEffect(() => {
         const startCamera = async () => {
+            // Stop existing stream tracks
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
             try {
                 const mediaStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1280 } }, // Square-ish preference
+                    video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 1280 } },
                     audio: false,
                 });
                 setStream(mediaStream);
@@ -26,14 +32,14 @@ export const useCamera = () => {
         startCamera();
 
         return () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
+            // Cleanup function only runs on unmount or dependency change
+            // We handle stream cleanup manually inside startCamera to avoid race conditions
         };
-    }, []);
+    }, [facingMode]); // Re-run when facingMode changes
 
     useEffect(() => {
         if (stream && videoRef.current) {
+            videoRef.current.srcObject = stream; // Ensure srcObject is set
             videoRef.current.onloadedmetadata = () => {
                 setIsReady(true);
                 videoRef.current.play();
@@ -41,25 +47,33 @@ export const useCamera = () => {
         }
     }, [stream]);
 
+    const switchCamera = useCallback(() => {
+        setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+    }, []);
+
     const takePhoto = useCallback(() => {
         if (!videoRef.current || !isReady) return null;
 
         const video = videoRef.current;
         const canvas = document.createElement('canvas');
-        // Make it square
         const size = Math.min(video.videoWidth, video.videoHeight);
         canvas.width = size;
         canvas.height = size;
 
         const ctx = canvas.getContext('2d');
-        // Center crop
         const xOffset = (video.videoWidth - size) / 2;
         const yOffset = (video.videoHeight - size) / 2;
+
+        // Mirror if using front camera
+        if (facingMode === 'user') {
+            ctx.translate(size, 0);
+            ctx.scale(-1, 1);
+        }
 
         ctx.drawImage(video, xOffset, yOffset, size, size, 0, 0, size, size);
 
         return canvas.toDataURL('image/jpeg', 0.9);
-    }, [isReady]);
+    }, [isReady, facingMode]);
 
-    return { videoRef, error, isReady, takePhoto };
+    return { videoRef, error, isReady, takePhoto, switchCamera, facingMode };
 };
