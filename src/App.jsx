@@ -80,7 +80,11 @@ function App() {
 
       // 4. Convert to Blob/File for Sharing
       canvas.toBlob(async (blob) => {
-        const file = new File([blob], `polaroid-${Date.now()}.png`, { type: 'image/png' });
+        const timestamp = Date.now();
+        const safeCaption = caption ? caption.replace(/[^a-z0-9]/gi, '_').toLowerCase() : '';
+        const filename = safeCaption ? `polaroid_${safeCaption}.png` : `polaroid-${timestamp}.png`;
+
+        const file = new File([blob], filename, { type: 'image/png' });
 
         // Use Web Share API if available (Mobile/Camera Roll)
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -94,12 +98,12 @@ function App() {
             if (err.name !== 'AbortError') {
               console.error("Share failed:", err);
               // Fallback to download
-              saveAsDownload(canvas);
+              saveAsDownload(canvas, filename);
             }
           }
         } else {
           // Fallback for Desktop
-          saveAsDownload(canvas);
+          saveAsDownload(canvas, filename);
         }
       }, 'image/png');
 
@@ -109,9 +113,9 @@ function App() {
     }
   };
 
-  const saveAsDownload = (canvas) => {
+  const saveAsDownload = (canvas, filename) => {
     const link = document.createElement('a');
-    link.download = `polaroid-${Date.now()}.png`;
+    link.download = filename;
     link.href = canvas.toDataURL('image/png');
     link.click();
   };
