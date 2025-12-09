@@ -1,13 +1,24 @@
 import React from 'react';
 import { useCamera } from '../hooks/useCamera';
 
-const Camera = ({ onCapture, filterEnabled, onToggleFilter }) => {
-  const { videoRef, error, isReady, takePhoto, switchCamera } = useCamera();
+const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true }) => {
+  const { videoRef, error, isReady, takePhoto, switchCamera, supportsFlash, flashOn, toggleFlash } = useCamera(shouldStart);
+  const [isImmersive, setIsImmersive] = React.useState(false);
 
   const handleCapture = () => {
     const photo = takePhoto();
     if (photo) {
       onCapture(photo);
+    }
+  };
+
+  const toggleImmersive = () => {
+    setIsImmersive(!isImmersive);
+  };
+
+  const handlePreviewClick = () => {
+    if (isImmersive) {
+      setIsImmersive(false);
     }
   };
 
@@ -17,7 +28,7 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter }) => {
 
   return (
     <div className="camera-container">
-      <div className="viewfinder">
+      <div className="viewfinder" onClick={handlePreviewClick}>
         <video
           ref={videoRef}
           autoPlay
@@ -32,9 +43,32 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter }) => {
         />
       </div>
 
-      {/* Filter Toggle (Left) */}
+      {/* Immersive Mode Toggle (Top Left) */}
       <button
-        className="control-btn filter-btn"
+        className={`control-btn immersive-btn ${isImmersive ? 'hidden' : ''}`}
+        onClick={toggleImmersive}
+        aria-label="Immersive mode"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+        </svg>
+      </button>
+
+      {/* Flash Toggle (Top Right) */}
+      {supportsFlash && (
+        <button
+          className={`control-btn flash-btn ${isImmersive ? 'hidden' : ''}`}
+          onClick={toggleFlash}
+          aria-label="Toggle flash"
+          style={{ opacity: flashOn ? 1 : 0.5 }}
+        >
+          {flashOn ? '⚡' : '⚡'}
+        </button>
+      )}
+
+      {/* Filter Toggle (Bottom Left, moved up slightly) */}
+      <button
+        className={`control-btn filter-btn ${isImmersive ? 'hidden' : ''}`}
         onClick={onToggleFilter}
         aria-label="Toggle filter"
         style={{ opacity: filterEnabled ? 1 : 0.5 }}
@@ -44,7 +78,7 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter }) => {
 
       {/* Shutter (Center) */}
       <button
-        className="shutter-btn"
+        className={`shutter-btn ${isImmersive ? 'immersive-shutter' : ''}`}
         onClick={handleCapture}
         disabled={!isReady}
         aria-label="Take photo"
@@ -52,9 +86,9 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter }) => {
         <div className="shutter-inner"></div>
       </button>
 
-      {/* Switch Camera (Right) */}
+      {/* Switch Camera (Bottom Right, moved up slightly) */}
       <button
-        className="control-btn switch-btn"
+        className={`control-btn switch-btn ${isImmersive ? 'hidden' : ''}`}
         onClick={switchCamera}
         aria-label="Switch camera"
       >
@@ -73,6 +107,7 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter }) => {
         .viewfinder {
           width: 100%;
           height: 100%;
+          cursor: ${isImmersive ? 'pointer' : 'default'};
         }
         .shutter-btn {
           position: absolute;
@@ -87,8 +122,15 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter }) => {
           display: flex;
           justify-content: center;
           align-items: center;
-          transition: transform 0.1s;
+          transition: transform 0.1s, opacity 0.3s;
           z-index: 2;
+        }
+        .immersive-shutter {
+          opacity: 0.3;
+          border-color: rgba(255,255,255,0.1);
+        }
+        .immersive-shutter:hover {
+          opacity: 0.8;
         }
         .shutter-btn:active {
           transform: translateX(-50%) scale(0.95);
@@ -106,7 +148,6 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter }) => {
         }
         .control-btn {
           position: absolute;
-          bottom: 30px;
           width: 40px;
           height: 40px;
           border-radius: 50%;
@@ -118,18 +159,33 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter }) => {
           color: white;
           font-size: 1.2rem;
           backdrop-filter: blur(4px);
-          transition: background 0.2s;
+          transition: background 0.2s, opacity 0.3s, transform 0.3s;
           z-index: 2;
           cursor: pointer;
+        }
+        .control-btn.hidden {
+          opacity: 0;
+          pointer-events: none;
+          transform: scale(0.8);
         }
         .control-btn:hover {
           background: rgba(255, 255, 255, 0.4);
         }
         .switch-btn {
+          bottom: 30px;
           right: 20px;
         }
         .filter-btn {
+          bottom: 30px;
           left: 20px;
+        }
+        .immersive-btn {
+          top: 20px;
+          left: 20px;
+        }
+        .flash-btn {
+          top: 20px;
+          right: 20px;
         }
       `}</style>
     </div>
