@@ -27,6 +27,8 @@ function App() {
     }, 10000);
   };
 
+  import { applyPolaroidFilter } from './utils/filters';
+
   const handleSave = async () => {
     if (!photo) return;
 
@@ -49,20 +51,31 @@ function App() {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, width, height);
 
-      // 2. Draw Image with Filter
+      // 2. Draw Image
       const img = new Image();
       img.src = photo;
       await new Promise(resolve => img.onload = resolve);
 
       const imgSize = width - (padding * 2); // Square image area
 
-      ctx.save();
-      // Apply the filter to the context before drawing
-      ctx.filter = 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)';
+      // Draw raw image first
       ctx.drawImage(img, padding, padding, imgSize, imgSize);
-      ctx.restore();
 
-      // 3. Draw Caption
+      // 3. Apply Pixel Filter (Robust fallback for ctx.filter)
+      try {
+        const imageData = ctx.getImageData(padding, padding, imgSize, imgSize);
+        const filteredData = applyPolaroidFilter(imageData);
+        ctx.putImageData(filteredData, padding, padding);
+      } catch (e) {
+        console.error("Filter application failed:", e);
+        // Fallback to ctx.filter if pixel manipulation fails (e.g. CORS, though unlikely with local base64)
+        ctx.save();
+        ctx.filter = 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)';
+        ctx.drawImage(img, padding, padding, imgSize, imgSize);
+        ctx.restore();
+      }
+
+      // 4. Draw Caption
       if (caption) {
         ctx.fillStyle = '#333333';
         // Map font selection to actual font family
@@ -78,15 +91,15 @@ function App() {
         ctx.fillText(caption, width / 2, height - (bottomPadding / 2) + 20);
       }
 
-      // 4. Convert to Blob/File for Sharing
+      // 5. Convert to Blob/File for Sharing (JPEG for better iOS compatibility)
       canvas.toBlob(async (blob) => {
         const timestamp = Date.now();
         const safeCaption = caption ? caption.replace(/[^a-z0-9]/gi, '_').toLowerCase() : '';
-        const filename = safeCaption ? `polaroid_${safeCaption}.png` : `polaroid-${timestamp}.png`;
+        const filename = safeCaption ? `polaroid_${safeCaption}.jpg` : `polaroid-${timestamp}.jpg`;
 
-        const file = new File([blob], filename, { type: 'image/png' });
+        const file = new File([blob], filename, { type: 'image/jpeg' });
 
-        // Use Web Share API if available (Mobile/Camera Roll)
+        // Use Web Share API
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           try {
             await navigator.share({
@@ -97,15 +110,13 @@ function App() {
           } catch (err) {
             if (err.name !== 'AbortError') {
               console.error("Share failed:", err);
-              // Fallback to download
               saveAsDownload(canvas, filename);
             }
           }
         } else {
-          // Fallback for Desktop
           saveAsDownload(canvas, filename);
         }
-      }, 'image/png');
+      }, 'image/jpeg', 0.9); // 90% quality JPEG
 
     } catch (err) {
       console.error("Error generating polaroid:", err);
@@ -116,7 +127,7 @@ function App() {
   const saveAsDownload = (canvas, filename) => {
     const link = document.createElement('a');
     link.download = filename;
-    link.href = canvas.toDataURL('image/png');
+    link.href = canvas.toDataURL('image/jpeg', 0.9);
     link.click();
   };
 
