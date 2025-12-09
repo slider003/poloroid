@@ -11,6 +11,7 @@ function App() {
   const [caption, setCaption] = useState('');
   const [font, setFont] = useState('Special Elite'); // Default retro font
   const [filterEnabled, setFilterEnabled] = useState(true);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const frameRef = useRef(null);
 
   const fonts = [
@@ -101,13 +102,11 @@ function App() {
 
         const file = new File([blob], filename, { type: 'image/jpeg' });
 
-        // Use Web Share API
+        // Use Web Share API (only share the image file, caption is already embedded)
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           try {
             await navigator.share({
-              files: [file],
-              title: 'My Digital Polaroid',
-              text: caption || 'Check out my polaroid!'
+              files: [file]
             });
           } catch (err) {
             if (err.name !== 'AbortError') {
@@ -134,17 +133,18 @@ function App() {
   };
 
   const reset = () => {
-    // Show confirmation dialog before resetting
-    const confirmed = window.confirm(
-      'Make sure to save your photo before taking a new one.\n\n' +
-      'Click OK to continue or Cancel to go back.'
-    );
+    setShowConfirmDialog(true);
+  };
 
-    if (confirmed) {
-      setPhoto(null);
-      setCaption('');
-      setMode('camera');
-    }
+  const confirmReset = () => {
+    setShowConfirmDialog(false);
+    setPhoto(null);
+    setCaption('');
+    setMode('camera');
+  };
+
+  const cancelReset = () => {
+    setShowConfirmDialog(false);
   };
 
   return (
@@ -267,6 +267,97 @@ function App() {
         </div>
       )}
 
+      {/* Custom Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '1rem',
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div style={{
+            background: '#1a1a1a',
+            border: '2px solid #444',
+            borderRadius: '12px',
+            padding: '2rem',
+            maxWidth: '400px',
+            width: '100%',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+            animation: 'slideUp 0.3s ease-out'
+          }}>
+            <div style={{
+              fontSize: '2.5rem',
+              textAlign: 'center',
+              marginBottom: '1rem'
+            }}>📸</div>
+            <h2 style={{
+              color: 'white',
+              textAlign: 'center',
+              marginBottom: '1rem',
+              fontSize: '1.3rem',
+              fontWeight: 'bold'
+            }}>Save Your Photo First</h2>
+            <p style={{
+              color: '#aaa',
+              textAlign: 'center',
+              marginBottom: '2rem',
+              lineHeight: '1.5',
+              fontSize: '1rem'
+            }}>
+              Make sure to save your photo before taking a new one.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                onClick={cancelReset}
+                style={{
+                  flex: 1,
+                  padding: '0.9rem',
+                  background: '#333',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.background = '#444'}
+                onMouseOut={(e) => e.target.style.background = '#333'}
+              >
+                Go Back
+              </button>
+              <button
+                onClick={confirmReset}
+                style={{
+                  flex: 1,
+                  padding: '0.9rem',
+                  background: 'var(--color-accent)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.background = '#0070f3'}
+                onMouseOut={(e) => e.target.style.background = 'var(--color-accent)'}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes develop {
           0% { filter: brightness(0) blur(20px) grayscale(1); }
@@ -277,6 +368,20 @@ function App() {
           0% { transform: scale(1); }
           50% { transform: scale(1.02); }
           100% { transform: scale(1); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </main>
