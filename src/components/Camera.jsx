@@ -23,7 +23,12 @@ const Camera = ({ onCapture }) => {
           autoPlay
           playsInline
           muted
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            filter: 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)'
+          }}
         />
       </div>
       <button
