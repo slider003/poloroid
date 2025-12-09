@@ -136,9 +136,8 @@ function App() {
   const reset = () => {
     // Show confirmation dialog before resetting
     const confirmed = window.confirm(
-      '⚠️ Your current photo will not be saved!\n\n' +
-      'We recommend saving your Polaroid before taking a new photo.\n\n' +
-      'Do you want to continue anyway?'
+      'Make sure to save your photo before taking a new one.\n\n' +
+      'Click OK to continue or Cancel to go back.'
     );
 
     if (confirmed) {
