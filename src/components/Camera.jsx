@@ -2,11 +2,18 @@ import React from 'react';
 import { useCamera } from '../hooks/useCamera';
 
 const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true }) => {
-  const { videoRef, error, isReady, takePhoto, switchCamera, supportsFlash, flashOn, toggleFlash, facingMode } = useCamera(shouldStart);
+  const { videoRef, error, isReady, takePhoto, switchCamera, supportsFlash, flashEnabled, toggleFlash, facingMode } = useCamera(shouldStart);
   const [isImmersive, setIsImmersive] = React.useState(false);
+  const [triggerVisualFlash, setTriggerVisualFlash] = React.useState(false);
 
-  const handleCapture = () => {
-    const photo = takePhoto();
+  const handleCapture = async () => {
+    // Trigger visual flash if flash is enabled (regardless of camera type)
+    if (flashEnabled) {
+      setTriggerVisualFlash(true);
+      setTimeout(() => setTriggerVisualFlash(false), 200);
+    }
+
+    const photo = await takePhoto();
     if (photo) {
       onCapture(photo);
     }
@@ -42,6 +49,19 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true }
             filter: filterEnabled ? 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)' : 'none'
           }}
         />
+        {/* Visual Flash Overlay */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'white',
+          opacity: triggerVisualFlash ? 0.8 : 0,
+          pointerEvents: 'none',
+          transition: 'opacity 0.1s ease-out',
+          zIndex: 10
+        }} />
       </div>
 
       {/* Immersive Mode Toggle (Top Left) */}
@@ -61,10 +81,9 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true }
         className={`control-btn flash-btn ${isImmersive ? 'hidden' : ''}`}
         onClick={toggleFlash}
         aria-label="Toggle flash"
-        style={{ opacity: flashOn ? 1 : (supportsFlash ? 0.7 : 0.3) }}
-        disabled={!supportsFlash}
+        style={{ opacity: flashEnabled ? 1 : 0.5 }}
       >
-        {flashOn ? '⚡' : '⚡'}
+        {flashEnabled ? '⚡' : '⚡'}
       </button>
 
       {/* Filter Toggle (Bottom Left, moved up slightly) */}

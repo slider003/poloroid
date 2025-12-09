@@ -6,6 +6,7 @@ import PolaroidFrame from './components/PolaroidFrame'
 import RecentGallery from './components/RecentGallery'
 import { applyPolaroidFilter } from './utils/filters'
 import { useRecentPhotos } from './hooks/useRecentPhotos'
+import { wasCameraAccessGranted } from './hooks/useCamera'
 
 function App() {
   const [mode, setMode] = useState('camera'); // camera, developing, result
@@ -14,14 +15,13 @@ function App() {
   const [font, setFont] = useState('Special Elite'); // Default retro font
   const [filterEnabled, setFilterEnabled] = useState(true);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [cameraEnabled, setCameraEnabled] = useState(() => wasCameraAccessGranted());
   const [currentPhotoId, setCurrentPhotoId] = useState(null);
   const frameRef = useRef(null);
 
   const { photos, addPhoto, updatePhoto, removePhoto, clearPhotos } = useRecentPhotos();
 
-  // Check if user has used camera before
-  const hasUsedCamera = localStorage.getItem('has_used_camera') === 'true';
+  // Check if user has used camera before - Removed legacy check
 
   const fonts = [
     { name: 'Typewriter', value: 'Special Elite' },
@@ -271,6 +271,13 @@ function App() {
               >
                 Turn on camera
               </button>
+
+              <div style={{ marginTop: '1rem', padding: '0 1rem' }}>
+                <p style={{ color: '#666', fontSize: '0.75rem', margin: 0 }}>
+                  <strong>iOS Tip:</strong> To skip asking for permission:
+                  <br />Tap 'AA' &gt; Website Settings &gt; Camera &gt; Allow
+                </p>
+              </div>
 
             </div>
           </PolaroidFrame>

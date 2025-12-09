@@ -14,7 +14,7 @@ export const useCamera = (shouldStart = true) => {
     const [isReady, setIsReady] = useState(false);
     const [facingMode, setFacingMode] = useState('user');
     const [supportsFlash, setSupportsFlash] = useState(false);
-    const [flashOn, setFlashOn] = useState(false);
+    const [flashEnabled, setFlashEnabled] = useState(false); // User preference
 
     useEffect(() => {
         if (!shouldStart) return;
@@ -85,27 +85,32 @@ export const useCamera = (shouldStart = true) => {
 
     const switchCamera = useCallback(() => {
         setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
-        setFlashOn(false); // Reset flash on camera switch
+        // Keep flash enabled preference, but it won't trigger on front cam if not supported
     }, []);
 
-    const toggleFlash = useCallback(async () => {
-        if (stream && supportsFlash) {
-            const track = stream.getVideoTracks()[0];
-            try {
-                await track.applyConstraints({
-                    advanced: [{ torch: !flashOn }]
-                });
-                setFlashOn(!flashOn);
-            } catch (err) {
-                console.error("Error toggling flash:", err);
-            }
-        }
-    }, [stream, supportsFlash, flashOn]);
+    const toggleFlash = useCallback(() => {
+        setFlashEnabled(prev => !prev);
+    }, []);
 
-    const takePhoto = useCallback(() => {
+    const takePhoto = useCallback(async () => {
         if (!videoRef.current || !isReady) return null;
 
         const video = videoRef.current;
+        const track = stream ? stream.getVideoTracks()[0] : null;
+
+        // 1. Handle Hardware Flash (Torch)
+        let didTurnOnTorch = false;
+        if (flashEnabled && supportsFlash && track) {
+            try {
+                await track.applyConstraints({ advanced: [{ torch: true }] });
+                didTurnOnTorch = true;
+                // Small delay to let camera adjust exposure to the new light
+                await new Promise(r => setTimeout(r, 200));
+            } catch (err) {
+                console.warn("Could not activate torch for flash:", err);
+            }
+        }
+
         const canvas = document.createElement('canvas');
         const size = Math.min(video.videoWidth, video.videoHeight);
         canvas.width = size;
@@ -123,8 +128,17 @@ export const useCamera = (shouldStart = true) => {
 
         ctx.drawImage(video, xOffset, yOffset, size, size, 0, 0, size, size);
 
-        return canvas.toDataURL('image/jpeg', 0.9);
-    }, [isReady, facingMode]);
+        // 2. Turn Off Hardware Flash
+        if (didTurnOnTorch && track) {
+            try {
+                await track.applyConstraints({ advanced: [{ torch: false }] });
+            } catch (err) {
+                console.warn("Could not deactivate torch:", err);
+            }
+        }
 
-    return { videoRef, error, isReady, takePhoto, switchCamera, facingMode, supportsFlash, flashOn, toggleFlash };
+        return canvas.toDataURL('image/jpeg', 0.9);
+    }, [isReady, facingMode, flashEnabled, supportsFlash, stream]);
+
+    return { videoRef, error, isReady, takePhoto, switchCamera, facingMode, supportsFlash, flashEnabled, toggleFlash };
 };
