@@ -22,47 +22,98 @@ function App() {
     setMode('developing');
 
     // Visual wait (10s)
-    setTimeout(async () => {
-      // Bake the filter into the image so html2canvas sees it
-      const filtered = await applyFilter(imageSrc);
-      setPhoto(filtered);
+    setTimeout(() => {
       setMode('result');
     }, 10000);
   };
 
-  const applyFilter = (src) => {
-    return new Promise((resolve) => {
+  const handleSave = async () => {
+    if (!photo) return;
+
+    try {
+      // Manually create the polaroid image to ensure high quality and filter application
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Polaroid dimensions (approx 3.5x4.2 ratio)
+      // Let's make it high res: 1000px wide
+      const width = 1000;
+      const height = 1200;
+      const padding = 60;
+      const bottomPadding = 200;
+
+      canvas.width = width;
+      canvas.height = height;
+
+      // 1. Draw Background (White Frame)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+
+      // 2. Draw Image with Filter
       const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        // Match the CSS filter: sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)
-        ctx.filter = 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)';
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/jpeg', 0.9));
-      };
-      img.src = src;
-    });
+      img.src = photo;
+      await new Promise(resolve => img.onload = resolve);
+
+      const imgSize = width - (padding * 2); // Square image area
+
+      ctx.save();
+      // Apply the filter to the context before drawing
+      ctx.filter = 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)';
+      ctx.drawImage(img, padding, padding, imgSize, imgSize);
+      ctx.restore();
+
+      // 3. Draw Caption
+      if (caption) {
+        ctx.fillStyle = '#333333';
+        // Map font selection to actual font family
+        const fontMap = {
+          'Special Elite': 'Special Elite',
+          'Caveat': 'Caveat',
+          'Inter': 'sans-serif'
+        };
+        const fontFamily = fontMap[font] || 'Special Elite';
+        ctx.font = `40px "${fontFamily}"`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(caption, width / 2, height - (bottomPadding / 2) + 20);
+      }
+
+      // 4. Convert to Blob/File for Sharing
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], `polaroid-${Date.now()}.png`, { type: 'image/png' });
+
+        // Use Web Share API if available (Mobile/Camera Roll)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'My Digital Polaroid',
+              text: caption || 'Check out my polaroid!'
+            });
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              console.error("Share failed:", err);
+              // Fallback to download
+              saveAsDownload(canvas);
+            }
+          }
+        } else {
+          // Fallback for Desktop
+          saveAsDownload(canvas);
+        }
+      }, 'image/png');
+
+    } catch (err) {
+      console.error("Error generating polaroid:", err);
+      alert("Could not save image. Please try again.");
+    }
   };
 
-  const handleSave = async () => {
-    if (frameRef.current) {
-      try {
-        const canvas = await html2canvas(frameRef.current, {
-          backgroundColor: null,
-          scale: 2, // Higher resolution
-          useCORS: true // Ensure images are loaded
-        });
-        const link = document.createElement('a');
-        link.download = `polaroid-${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      } catch (err) {
-        console.error("Error saving image:", err);
-      }
-    }
+  const saveAsDownload = (canvas) => {
+    const link = document.createElement('a');
+    link.download = `polaroid-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
   };
 
   const reset = () => {
@@ -144,7 +195,7 @@ function App() {
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover',
-                  // Filter is now baked in, so we don't need CSS filter here
+                  filter: 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)'
                 }}
               />
             </PolaroidFrame>
