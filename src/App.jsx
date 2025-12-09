@@ -3,6 +3,7 @@ import html2canvas from 'html2canvas'
 import './index.css'
 import Camera from './components/Camera'
 import PolaroidFrame from './components/PolaroidFrame'
+import { applyPolaroidFilter } from './utils/filters'
 
 function App() {
   const [mode, setMode] = useState('camera'); // camera, developing, result
@@ -26,8 +27,6 @@ function App() {
       setMode('result');
     }, 10000);
   };
-
-  import { applyPolaroidFilter } from './utils/filters';
 
   const handleSave = async () => {
     if (!photo) return;
