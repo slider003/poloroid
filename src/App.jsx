@@ -14,9 +14,9 @@ function App() {
   const [caption, setCaption] = useState('');
   const [font, setFont] = useState('Special Elite'); // Default retro font
   const [filterEnabled, setFilterEnabled] = useState(true);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(() => wasCameraAccessGranted());
   const [currentPhotoId, setCurrentPhotoId] = useState(null);
+  const [triggerVisualFlash, setTriggerVisualFlash] = useState(false);
   const frameRef = useRef(null);
 
   const { photos, addPhoto, updatePhoto, removePhoto, clearPhotos } = useRecentPhotos();
@@ -174,19 +174,10 @@ function App() {
   };
 
   const reset = () => {
-    setShowConfirmDialog(true);
-  };
-
-  const confirmReset = () => {
-    setShowConfirmDialog(false);
     setPhoto(null);
     setCaption('');
     setMode('camera');
     // Keep camera enabled so we don't show the welcome screen again
-  };
-
-  const cancelReset = () => {
-    setShowConfirmDialog(false);
   };
 
   const handleSelectRecent = (recentPhoto) => {
@@ -205,6 +196,11 @@ function App() {
     // Always set ID to enable updates instead of duplication
     setCurrentPhotoId(recentPhoto.id);
     setMode('result');
+  };
+
+  const handleFlash = () => {
+    setTriggerVisualFlash(true);
+    setTimeout(() => setTriggerVisualFlash(false), 300);
   };
 
   return (
@@ -298,6 +294,7 @@ function App() {
               filterEnabled={filterEnabled}
               onToggleFilter={() => setFilterEnabled(!filterEnabled)}
               shouldStart={cameraEnabled}
+              onFlash={handleFlash}
             />
           </PolaroidFrame>
 
@@ -411,96 +408,7 @@ function App() {
         </div>
       )}
 
-      {/* Custom Confirmation Dialog */}
-      {showConfirmDialog && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.85)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '1rem',
-          animation: 'fadeIn 0.2s ease-out'
-        }}>
-          <div style={{
-            background: '#1a1a1a',
-            border: '2px solid #444',
-            borderRadius: '12px',
-            padding: '2rem',
-            maxWidth: '400px',
-            width: '100%',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-            animation: 'slideUp 0.3s ease-out'
-          }}>
-            <div style={{
-              fontSize: '2.5rem',
-              textAlign: 'center',
-              marginBottom: '1rem'
-            }}>📸</div>
-            <h2 style={{
-              color: 'white',
-              textAlign: 'center',
-              marginBottom: '1rem',
-              fontSize: '1.3rem',
-              fontWeight: 'bold'
-            }}>Save Your Photo First</h2>
-            <p style={{
-              color: '#aaa',
-              textAlign: 'center',
-              marginBottom: '2rem',
-              lineHeight: '1.5',
-              fontSize: '1rem'
-            }}>
-              Make sure to save your photo before taking a new one.
-            </p>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button
-                onClick={cancelReset}
-                style={{
-                  flex: 1,
-                  padding: '0.9rem',
-                  background: '#333',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseOver={(e) => e.target.style.background = '#444'}
-                onMouseOut={(e) => e.target.style.background = '#333'}
-              >
-                Go Back
-              </button>
-              <button
-                onClick={confirmReset}
-                style={{
-                  flex: 1,
-                  padding: '0.9rem',
-                  background: 'var(--color-accent)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseOver={(e) => e.target.style.background = '#0070f3'}
-                onMouseOut={(e) => e.target.style.background = 'var(--color-accent)'}
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       <style>{`
         @keyframes develop {
@@ -528,6 +436,21 @@ function App() {
           }
         }
       `}</style>
+
+      {/* Global Flash Overlay */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: 'white',
+        opacity: triggerVisualFlash ? 1 : 0,
+        pointerEvents: 'none',
+        transition: 'opacity 0.1s ease-out',
+        zIndex: 99999
+      }}
+      />
     </main>
   )
 }

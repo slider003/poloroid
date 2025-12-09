@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 const CAMERA_PERMISSION_KEY = 'camera_permission_granted';
+const CAMERA_FACING_MODE_KEY = 'camera_facing_mode';
 
 // Utility function to check if camera permission was previously granted
 export const wasCameraAccessGranted = () => {
@@ -12,7 +13,7 @@ export const useCamera = (shouldStart = true) => {
     const [stream, setStream] = useState(null);
     const [error, setError] = useState(null);
     const [isReady, setIsReady] = useState(false);
-    const [facingMode, setFacingMode] = useState('user');
+    const [facingMode, setFacingMode] = useState(() => localStorage.getItem(CAMERA_FACING_MODE_KEY) || 'user');
     const [supportsFlash, setSupportsFlash] = useState(false);
     const [flashEnabled, setFlashEnabled] = useState(false); // User preference
 
@@ -84,7 +85,11 @@ export const useCamera = (shouldStart = true) => {
     }, [stream]);
 
     const switchCamera = useCallback(() => {
-        setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+        setFacingMode(prev => {
+            const newMode = prev === 'user' ? 'environment' : 'user';
+            localStorage.setItem(CAMERA_FACING_MODE_KEY, newMode);
+            return newMode;
+        });
         // Keep flash enabled preference, but it won't trigger on front cam if not supported
     }, []);
 

@@ -1,16 +1,18 @@
 import React from 'react';
 import { useCamera } from '../hooks/useCamera';
 
-const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true }) => {
+const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, onFlash }) => {
   const { videoRef, error, isReady, takePhoto, switchCamera, supportsFlash, flashEnabled, toggleFlash, facingMode } = useCamera(shouldStart);
   const [isImmersive, setIsImmersive] = React.useState(false);
-  const [triggerVisualFlash, setTriggerVisualFlash] = React.useState(false);
 
   const handleCapture = async () => {
     // Trigger visual flash if flash is enabled (regardless of camera type)
-    if (flashEnabled) {
-      setTriggerVisualFlash(true);
-      setTimeout(() => setTriggerVisualFlash(false), 200);
+    if (flashEnabled && onFlash) {
+      onFlash();
+
+      // Give the UI a moment to paint the white flash before taking the photo
+      // Increased to 150ms to ensure the CSS transition (0.1s) completes
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
 
     const photo = await takePhoto();
@@ -49,19 +51,7 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true }
             filter: filterEnabled ? 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)' : 'none'
           }}
         />
-        {/* Visual Flash Overlay */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'white',
-          opacity: triggerVisualFlash ? 0.8 : 0,
-          pointerEvents: 'none',
-          transition: 'opacity 0.1s ease-out',
-          zIndex: 10
-        }} />
+
       </div>
 
       {/* Immersive Mode Toggle (Top Left) */}

@@ -30,10 +30,11 @@ No downloads. No accounts. Just pure nostalgia.
 - **✍️ Custom Captions** - Add personalized text with retro typewriter, handwritten, or clean fonts
 - **🔄 Camera Switching** - Toggle between front and back cameras on mobile devices
 - **💾 Auto-Save & Gallery** - Smart auto-saving ensures you never lose a memory, stored safely on your device
-- **🔐 Privacy First** - Remembers your camera access preference for seamless use
+- **🧠 Smart Memory** - Automatically remembers your camera preference (front/back) and permissions
+- **⚡ Full Screen Flash** - Max-brightness white screen flash for perfect selfies and clear visual feedback
 - **📤 Easy Sharing** - Native share integration on mobile, download fallback on desktop
 - **📱 Progressive Web App** - Install to home screen and use offline
-- **⚡ Flash Mode** - Toggle flash for better lighting (supported devices only)
+
 
 ## 🚀 Quick Start
 ### Try It Now
