@@ -134,9 +134,18 @@ function App() {
   };
 
   const reset = () => {
-    setPhoto(null);
-    setCaption('');
-    setMode('camera');
+    // Show confirmation dialog before resetting
+    const confirmed = window.confirm(
+      '⚠️ Your current photo will not be saved!\n\n' +
+      'We recommend saving your Polaroid before taking a new photo.\n\n' +
+      'Do you want to continue anyway?'
+    );
+
+    if (confirmed) {
+      setPhoto(null);
+      setCaption('');
+      setMode('camera');
+    }
   };
 
   return (
