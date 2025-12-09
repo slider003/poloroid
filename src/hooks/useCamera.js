@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
+const CAMERA_PERMISSION_KEY = 'camera_permission_granted';
+
+// Utility function to check if camera permission was previously granted
+export const wasCameraAccessGranted = () => {
+    return localStorage.getItem(CAMERA_PERMISSION_KEY) === 'true';
+};
+
 export const useCamera = () => {
     const videoRef = useRef(null);
     const [stream, setStream] = useState(null);
@@ -15,16 +22,52 @@ export const useCamera = () => {
             }
 
             try {
+                // Check if we can use the Permissions API to check camera permission
+                if (navigator.permissions && navigator.permissions.query) {
+                    try {
+                        const permissionStatus = await navigator.permissions.query({ name: 'camera' });
+
+                        // Store permission status in localStorage
+                        if (permissionStatus.state === 'granted') {
+                            localStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
+                        } else if (permissionStatus.state === 'denied') {
+                            localStorage.setItem(CAMERA_PERMISSION_KEY, 'false');
+                        }
+
+                        // Listen for permission changes
+                        permissionStatus.onchange = () => {
+                            if (permissionStatus.state === 'granted') {
+                                localStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
+                            } else if (permissionStatus.state === 'denied') {
+                                localStorage.setItem(CAMERA_PERMISSION_KEY, 'false');
+                            }
+                        };
+                    } catch (permErr) {
+                        // Permissions API might not support 'camera' query on all browsers
+                        console.log("Permissions API not fully supported:", permErr);
+                    }
+                }
+
                 const mediaStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 1280 } },
                     audio: false,
                 });
+
+                // Successfully got camera access - store in localStorage
+                localStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
+
                 setStream(mediaStream);
                 if (videoRef.current) {
                     videoRef.current.srcObject = mediaStream;
                 }
             } catch (err) {
                 console.error("Error accessing camera:", err);
+
+                // Store that permission was denied
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    localStorage.setItem(CAMERA_PERMISSION_KEY, 'false');
+                }
+
                 setError(err);
             }
         };

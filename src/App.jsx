@@ -134,9 +134,17 @@ function App() {
   };
 
   const reset = () => {
-    setPhoto(null);
-    setCaption('');
-    setMode('camera');
+    // Show confirmation dialog before resetting
+    const confirmed = window.confirm(
+      'Make sure to save your photo before taking a new one.\n\n' +
+      'Click OK to continue or Cancel to go back.'
+    );
+
+    if (confirmed) {
+      setPhoto(null);
+      setCaption('');
+      setMode('camera');
+    }
   };
 
   return (
