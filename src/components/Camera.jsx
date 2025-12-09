@@ -68,10 +68,9 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
       {/* Flash Toggle (Top Right) */}
 
       <button
-        className={`control-btn flash-btn ${isImmersive ? 'hidden' : ''}`}
+        className={`control-btn flash-btn ${isImmersive ? 'hidden' : ''} ${!flashEnabled ? 'flash-disabled' : ''}`}
         onClick={toggleFlash}
         aria-label="Toggle flash"
-        style={{ opacity: flashEnabled ? 1 : 0.5 }}
       >
         {flashEnabled ? '⚡' : '⚡'}
       </button>
@@ -196,6 +195,17 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
         .flash-btn {
           top: 20px;
           right: 20px;
+        }
+        .flash-disabled::after {
+          content: '';
+          position: absolute;
+          width: 70%;
+          height: 2px;
+          background-color: #ff3b30;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(45deg);
+          box-shadow: 0 0 2px rgba(0,0,0,0.5);
         }
       `}</style>
     </div>

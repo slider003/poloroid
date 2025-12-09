@@ -15,7 +15,7 @@ export const useCamera = (shouldStart = true) => {
     const [isReady, setIsReady] = useState(false);
     const [facingMode, setFacingMode] = useState(() => localStorage.getItem(CAMERA_FACING_MODE_KEY) || 'user');
     const [supportsFlash, setSupportsFlash] = useState(false);
-    const [flashEnabled, setFlashEnabled] = useState(false); // User preference
+    const [flashEnabled, setFlashEnabled] = useState(true); // User preference
 
     useEffect(() => {
         if (!shouldStart) return;
