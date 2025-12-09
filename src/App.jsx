@@ -10,6 +10,7 @@ function App() {
   const [photo, setPhoto] = useState(null);
   const [caption, setCaption] = useState('');
   const [font, setFont] = useState('Special Elite'); // Default retro font
+  const [filterEnabled, setFilterEnabled] = useState(true);
   const frameRef = useRef(null);
 
   const fonts = [
@@ -61,17 +62,19 @@ function App() {
       ctx.drawImage(img, padding, padding, imgSize, imgSize);
 
       // 3. Apply Pixel Filter (Robust fallback for ctx.filter)
-      try {
-        const imageData = ctx.getImageData(padding, padding, imgSize, imgSize);
-        const filteredData = applyPolaroidFilter(imageData);
-        ctx.putImageData(filteredData, padding, padding);
-      } catch (e) {
-        console.error("Filter application failed:", e);
-        // Fallback to ctx.filter if pixel manipulation fails (e.g. CORS, though unlikely with local base64)
-        ctx.save();
-        ctx.filter = 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)';
-        ctx.drawImage(img, padding, padding, imgSize, imgSize);
-        ctx.restore();
+      if (filterEnabled) {
+        try {
+          const imageData = ctx.getImageData(padding, padding, imgSize, imgSize);
+          const filteredData = applyPolaroidFilter(imageData);
+          ctx.putImageData(filteredData, padding, padding);
+        } catch (e) {
+          console.error("Filter application failed:", e);
+          // Fallback to ctx.filter if pixel manipulation fails (e.g. CORS, though unlikely with local base64)
+          ctx.save();
+          ctx.filter = 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)';
+          ctx.drawImage(img, padding, padding, imgSize, imgSize);
+          ctx.restore();
+        }
       }
 
       // 4. Draw Caption
@@ -145,7 +148,11 @@ function App() {
       {mode === 'camera' && (
         <div style={{ width: '100%', maxWidth: '400px' }}>
           <PolaroidFrame caption="Ready to snap">
-            <Camera onCapture={handleCapture} />
+            <Camera
+              onCapture={handleCapture}
+              filterEnabled={filterEnabled}
+              onToggleFilter={() => setFilterEnabled(!filterEnabled)}
+            />
           </PolaroidFrame>
         </div>
       )}
@@ -209,7 +216,7 @@ function App() {
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover',
-                  filter: 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)'
+                  filter: filterEnabled ? 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)' : 'none'
                 }}
               />
             </PolaroidFrame>
