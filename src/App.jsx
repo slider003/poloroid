@@ -3,7 +3,9 @@ import html2canvas from 'html2canvas'
 import './index.css'
 import Camera from './components/Camera'
 import PolaroidFrame from './components/PolaroidFrame'
+import RecentGallery from './components/RecentGallery'
 import { applyPolaroidFilter } from './utils/filters'
+import { useRecentPhotos } from './hooks/useRecentPhotos'
 
 function App() {
   const [mode, setMode] = useState('camera'); // camera, developing, result
@@ -12,7 +14,13 @@ function App() {
   const [font, setFont] = useState('Special Elite'); // Default retro font
   const [filterEnabled, setFilterEnabled] = useState(true);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [cameraEnabled, setCameraEnabled] = useState(false);
   const frameRef = useRef(null);
+
+  const { photos, addPhoto, removePhoto, clearPhotos } = useRecentPhotos();
+
+  // Check if user has used camera before
+  const hasUsedCamera = localStorage.getItem('has_used_camera') === 'true';
 
   const fonts = [
     { name: 'Typewriter', value: 'Special Elite' },
@@ -94,6 +102,11 @@ function App() {
         ctx.fillText(caption, width / 2, height - (bottomPadding / 2) + 20);
       }
 
+      const finalImage = canvas.toDataURL('image/jpeg', 0.8);
+
+      // Save to recent photos
+      addPhoto(finalImage);
+
       // 5. Convert to Blob/File for Sharing (JPEG for better iOS compatibility)
       canvas.toBlob(async (blob) => {
         const timestamp = Date.now();
@@ -132,6 +145,11 @@ function App() {
     link.click();
   };
 
+  const enableCamera = () => {
+    setCameraEnabled(true);
+    localStorage.setItem('has_used_camera', 'true');
+  };
+
   const reset = () => {
     setShowConfirmDialog(true);
   };
@@ -141,10 +159,22 @@ function App() {
     setPhoto(null);
     setCaption('');
     setMode('camera');
+    // Keep camera enabled so we don't show the welcome screen again
   };
 
   const cancelReset = () => {
     setShowConfirmDialog(false);
+  };
+
+  const handleSelectRecent = (recentPhoto) => {
+    // NOTE: For now, we just load the image back into 'photo' state and go to result mode.
+    // This won't have the original caption unless we stored it separately.
+    // For MVP, we treat it as a developed photo.
+    if (recentPhoto && recentPhoto.data) {
+      setPhoto(recentPhoto.data);
+      setMode('result');
+      setCaption(''); // Reset caption as we don't store it yet
+    }
   };
 
   return (
@@ -153,15 +183,87 @@ function App() {
         <h1>Digital Polaroid</h1>
       </header>
 
-      {mode === 'camera' && (
+      {mode === 'camera' && !cameraEnabled && (
+        <div style={{ width: '100%', maxWidth: '400px' }}>
+          <PolaroidFrame caption="Ready to snap">
+            <div style={{
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '1.5rem',
+              textAlign: 'center',
+              gap: '1rem',
+              overflow: 'hidden'
+            }}>
+              <div style={{ fontSize: '3rem', marginTop: '0.5rem' }}>📷</div>
+              <h2 style={{
+                color: 'white',
+                fontSize: '1.2rem',
+                fontWeight: 'bold',
+                margin: 0
+              }}>
+                Welcome to Digital Polaroid
+              </h2>
+              <p style={{
+                color: '#aaa',
+                fontSize: '0.9rem',
+                lineHeight: '1.5',
+                margin: 0,
+                maxWidth: '280px'
+              }}>
+                Tap below to begin capturing memories
+              </p>
+              <button
+                onClick={enableCamera}
+                style={{
+                  padding: '0.8rem 1.6rem',
+                  background: 'var(--color-accent)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  marginTop: '0.5rem'
+                }}
+                onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+              >
+                Turn on camera
+              </button>
+
+            </div>
+          </PolaroidFrame>
+
+          <RecentGallery
+            photos={photos}
+            onSelect={handleSelectRecent}
+            onClear={clearPhotos}
+          />
+        </div>
+      )}
+
+      {mode === 'camera' && cameraEnabled && (
         <div style={{ width: '100%', maxWidth: '400px' }}>
           <PolaroidFrame caption="Ready to snap">
             <Camera
               onCapture={handleCapture}
               filterEnabled={filterEnabled}
               onToggleFilter={() => setFilterEnabled(!filterEnabled)}
+              shouldStart={cameraEnabled}
             />
           </PolaroidFrame>
+
+          <RecentGallery
+            photos={photos}
+            onSelect={handleSelectRecent}
+            onClear={clearPhotos}
+          />
         </div>
       )}
 

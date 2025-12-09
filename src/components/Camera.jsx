@@ -2,7 +2,7 @@ import React from 'react';
 import { useCamera } from '../hooks/useCamera';
 
 const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true }) => {
-  const { videoRef, error, isReady, takePhoto, switchCamera, supportsFlash, flashOn, toggleFlash } = useCamera(shouldStart);
+  const { videoRef, error, isReady, takePhoto, switchCamera, supportsFlash, flashOn, toggleFlash, facingMode } = useCamera(shouldStart);
   const [isImmersive, setIsImmersive] = React.useState(false);
 
   const handleCapture = () => {
@@ -38,6 +38,7 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true }
             width: '100%',
             height: '100%',
             objectFit: 'cover',
+            transform: facingMode === 'user' ? 'scaleX(-1)' : 'none',
             filter: filterEnabled ? 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)' : 'none'
           }}
         />
