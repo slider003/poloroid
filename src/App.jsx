@@ -22,9 +22,29 @@ function App() {
     setMode('developing');
 
     // Visual wait (10s)
-    setTimeout(() => {
+    setTimeout(async () => {
+      // Bake the filter into the image so html2canvas sees it
+      const filtered = await applyFilter(imageSrc);
+      setPhoto(filtered);
       setMode('result');
     }, 10000);
+  };
+
+  const applyFilter = (src) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        // Match the CSS filter: sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)
+        ctx.filter = 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)';
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg', 0.9));
+      };
+      img.src = src;
+    });
   };
 
   const handleSave = async () => {
@@ -32,7 +52,8 @@ function App() {
       try {
         const canvas = await html2canvas(frameRef.current, {
           backgroundColor: null,
-          scale: 2 // Higher resolution
+          scale: 2, // Higher resolution
+          useCORS: true // Ensure images are loaded
         });
         const link = document.createElement('a');
         link.download = `polaroid-${Date.now()}.png`;
@@ -123,7 +144,7 @@ function App() {
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover',
-                  filter: 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)'
+                  // Filter is now baked in, so we don't need CSS filter here
                 }}
               />
             </PolaroidFrame>
