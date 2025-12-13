@@ -172,7 +172,7 @@ function App() {
         canvas.toBlob(async (blob) => {
           const timestamp = Date.now();
           const safeCaption = caption ? caption.replace(/[^a-z0-9]/gi, '_').toLowerCase() : '';
-          const filename = safeCaption ? `polaroid_${safeCaption}.jpg` : `polaroid-${timestamp}.jpg`;
+          const filename = safeCaption ? `digitalpolaroid_${safeCaption}.jpg` : `digitalpolaroid_${timestamp}.jpg`;
           const file = new File([blob], filename, { type: 'image/jpeg' });
 
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
