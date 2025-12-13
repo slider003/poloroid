@@ -91,18 +91,20 @@ function App() {
       }
 
       // 4. Draw Caption
+      const fontMap = {
+        'Special Elite': 'Special Elite',
+        'Caveat': 'Caveat',
+        'Inter': 'sans-serif'
+      };
+      const fontFamily = fontMap[font] || 'Special Elite';
+
       if (caption) {
         ctx.fillStyle = '#333333';
-        const fontMap = {
-          'Special Elite': 'Special Elite',
-          'Caveat': 'Caveat',
-          'Inter': 'sans-serif'
-        };
-        const fontFamily = fontMap[font] || 'Special Elite';
         ctx.font = `40px "${fontFamily}"`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(caption, width / 2, height - (bottomPadding / 2) + 20);
+        // Position caption closer to image - approximately 30px below image
+        ctx.fillText(caption, width / 2, imgSize + padding + 50);
       }
 
       // 5. Draw Timestamp
@@ -129,9 +131,8 @@ function App() {
         ctx.fillStyle = '#666666';
         ctx.textAlign = 'center';
 
-        const yPos = caption
-          ? height - (bottomPadding / 2) + 60
-          : height - (bottomPadding / 2) + 20;
+        // Always position at bottom of white border
+        const yPos = height - 40; // Bottom of white border
 
         ctx.fillText(timestampText, width / 2, yPos);
       }
@@ -207,7 +208,7 @@ function App() {
       }, 1000); // Debounce 1s
       return () => clearTimeout(timer);
     }
-  }, [mode, photo, caption, filterEnabled, font, currentPhotoId]);
+  }, [mode, photo, caption, filterEnabled, font, timestampMode, currentPhotoId]);
 
   const saveAsDownload = (canvas, filename) => {
     const link = document.createElement('a');
