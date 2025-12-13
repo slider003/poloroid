@@ -1,9 +1,17 @@
 import React from 'react';
 import { useCamera } from '../hooks/useCamera';
 
-const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, onFlash }) => {
+const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, onFlash, timestampMode }) => {
   const { videoRef, error, isReady, takePhoto, switchCamera, supportsFlash, flashEnabled, toggleFlash, facingMode } = useCamera(shouldStart);
   const [isImmersive, setIsImmersive] = React.useState(false);
+  const [currentTime, setCurrentTime] = React.useState(new Date());
+
+  React.useEffect(() => {
+    if (timestampMode === 'overlay') {
+      const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [timestampMode]);
 
   const handleCapture = async () => {
     // Trigger visual flash if flash is enabled (regardless of camera type)
@@ -52,6 +60,12 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
           }}
         />
 
+        {/* Timestamp Overlay */}
+        {timestampMode === 'overlay' && (
+          <div className="timestamp-overlay">
+            {currentTime.toLocaleDateString().replace(/\//g, '.')} {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+          </div>
+        )}
       </div>
 
       {/* Immersive Mode Toggle (Top Left) */}
@@ -85,6 +99,9 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
         ✨
       </button>
 
+      {/* Timestamp Toggle (Bottom Left, next to filter) - REMOVED */}
+
+
       {/* Shutter (Center) */}
       <button
         className={`shutter-btn ${isImmersive ? 'immersive-shutter' : ''}`}
@@ -112,6 +129,17 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
           background: #000;
           overflow: hidden;
           border-radius: 4px;
+        }
+        .timestamp-overlay {
+          position: absolute;
+          bottom: 5px; /* Bottom of camera feed */
+          right: 20px;
+          font-family: 'Courier New', monospace;
+          color: #ff9966;
+          font-size: 1.2rem;
+          text-shadow: 2px 2px 0px #000000;
+          pointer-events: none;
+          z-index: 1;
         }
         .viewfinder {
           width: 100%;

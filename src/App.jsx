@@ -17,6 +17,9 @@ function App() {
   const [cameraEnabled, setCameraEnabled] = useState(() => wasCameraAccessGranted());
   const [currentPhotoId, setCurrentPhotoId] = useState(null);
   const [triggerVisualFlash, setTriggerVisualFlash] = useState(false);
+  const [timestampMode, setTimestampMode] = useState('overlay'); // 'off', 'overlay', 'text'
+  const [capturedTimestamp, setCapturedTimestamp] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const frameRef = useRef(null);
 
   const { photos, addPhoto, updatePhoto, removePhoto, clearPhotos } = useRecentPhotos();
@@ -31,6 +34,7 @@ function App() {
 
   const handleCapture = (imageSrc) => {
     setPhoto(imageSrc);
+    setCapturedTimestamp(new Date());
     setCurrentPhotoId(null); // Reset session ID for new photo
     setMode('developing');
 
@@ -101,6 +105,37 @@ function App() {
         ctx.fillText(caption, width / 2, height - (bottomPadding / 2) + 20);
       }
 
+      // 5. Draw Timestamp
+      const timestampToUse = capturedTimestamp || new Date();
+      if (timestampMode === 'overlay') {
+        const dateStr = timestampToUse.toLocaleDateString().replace(/\//g, '.'); // 12.12.2025
+        const timeStr = timestampToUse.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        const timestampText = `${dateStr} ${timeStr}`;
+
+        ctx.font = '24px "Courier New", monospace';
+        ctx.fillStyle = '#ff9966'; // Burnt orange/digital look
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 2;
+        ctx.textAlign = 'right';
+        ctx.fillText(timestampText, imgSize + padding - 20, imgSize + padding - 20);
+        ctx.shadowBlur = 0; // Reset
+      } else if (timestampMode === 'text') {
+        const dateStr = timestampToUse.toLocaleDateString();
+        const timeStr = timestampToUse.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const timestampText = `${dateStr} • ${timeStr}`;
+
+        // Match user's font but smaller
+        ctx.font = `24px "${fontFamily}"`; // Same font as caption, slightly smaller
+        ctx.fillStyle = '#666666';
+        ctx.textAlign = 'center';
+
+        const yPos = caption
+          ? height - (bottomPadding / 2) + 60
+          : height - (bottomPadding / 2) + 20;
+
+        ctx.fillText(timestampText, width / 2, yPos);
+      }
+
       const finalImage = canvas.toDataURL('image/jpeg', 0.8);
 
       // Save/Update in Storage (Auto-save)
@@ -111,6 +146,9 @@ function App() {
           caption,
           filterEnabled,
           font,
+          filterEnabled,
+          font,
+          timestampMode,
           timestamp: new Date().toISOString()
         });
       } else {
@@ -120,6 +158,9 @@ function App() {
           caption,
           filterEnabled,
           font,
+          filterEnabled,
+          font,
+          timestampMode,
           timestamp: new Date().toISOString()
         });
         setCurrentPhotoId(newId);
@@ -150,6 +191,13 @@ function App() {
   };
 
   const handleSave = () => saveCurrentPolaroid(true);
+
+  // Toggle Timestamp Mode
+  const toggleTimestampMode = () => {
+    const modes = ['overlay', 'text', 'off'];
+    const nextIndex = (modes.indexOf(timestampMode) + 1) % modes.length;
+    setTimestampMode(modes[nextIndex]);
+  };
 
   // Auto-save effect: Trigger when entering result mode or changing caption/settings
   useEffect(() => {
@@ -201,6 +249,23 @@ function App() {
   const handleFlash = () => {
     setTriggerVisualFlash(true);
     setTimeout(() => setTriggerVisualFlash(false), 300);
+  };
+
+  // Update current time every second for live timestamps
+  useEffect(() => {
+    if (mode === 'camera' && timestampMode === 'text') {
+      const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [mode, timestampMode]);
+
+  const getCurrentTimestampDisplay = () => {
+    const timeToDisplay = (mode === 'result' && capturedTimestamp) ? capturedTimestamp : currentTime;
+
+    if (timestampMode === 'text') {
+      return `${timeToDisplay.toLocaleDateString()} • ${timeToDisplay.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+    }
+    return 'Ready to snap';
   };
 
   return (
@@ -278,6 +343,28 @@ function App() {
             </div>
           </PolaroidFrame>
 
+          {/* Timestamp Toggle (Outside Frame) */}
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
+            <button
+              onClick={toggleTimestampMode}
+              style={{
+                background: '#333',
+                color: 'white',
+                border: '1px solid #444',
+                borderRadius: '20px',
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer'
+              }}
+            >
+              <span>{timestampMode === 'off' ? '📅' : (timestampMode === 'overlay' ? '📼' : 'Aa')}</span>
+              <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
+            </button>
+          </div>
+
           <RecentGallery
             photos={photos}
             onSelect={handleSelectRecent}
@@ -288,15 +375,38 @@ function App() {
 
       {mode === 'camera' && cameraEnabled && (
         <div style={{ width: '100%', maxWidth: '400px' }}>
-          <PolaroidFrame caption="Ready to snap">
+          <PolaroidFrame caption={timestampMode === 'text' ? getCurrentTimestampDisplay() : "Ready to snap"}>
             <Camera
               onCapture={handleCapture}
               filterEnabled={filterEnabled}
               onToggleFilter={() => setFilterEnabled(!filterEnabled)}
               shouldStart={cameraEnabled}
               onFlash={handleFlash}
+              timestampMode={timestampMode}
             />
           </PolaroidFrame>
+
+          {/* Timestamp Toggle (Outside Frame) */}
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
+            <button
+              onClick={toggleTimestampMode}
+              style={{
+                background: '#333',
+                color: 'white',
+                border: '1px solid #444',
+                borderRadius: '20px',
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer'
+              }}
+            >
+              <span>{timestampMode === 'off' ? '📅' : (timestampMode === 'overlay' ? '📼' : 'Aa')}</span>
+              <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
+            </button>
+          </div>
 
           <RecentGallery
             photos={photos}
@@ -338,7 +448,7 @@ function App() {
       {mode === 'result' && (
         <div style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* The Frame to Capture */}
-          <div ref={frameRef} style={{ display: 'inline-block' }}>
+          <div ref={frameRef} style={{ display: 'inline-block', position: 'relative' }}>
             <PolaroidFrame caption={
               <input
                 type="text"
@@ -369,6 +479,41 @@ function App() {
                 }}
               />
             </PolaroidFrame>
+
+            {/* Timestamp Overlay for Result Mode */}
+            {timestampMode === 'overlay' && capturedTimestamp && (
+              <div style={{
+                position: 'absolute',
+                bottom: '95px', // Bottom of image preview, just above white border
+                right: '40px',
+                fontFamily: '"Courier New", monospace',
+                color: '#ff9966',
+                fontSize: '1.2rem',
+                textShadow: '2px 2px 0px #000000',
+                pointerEvents: 'none',
+                zIndex: 10
+              }}>
+                {capturedTimestamp.toLocaleDateString().replace(/\//g, '.')} {capturedTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+              </div>
+            )}
+
+            {/* Text Timestamp for Result Mode - Bottom of white border */}
+            {timestampMode === 'text' && capturedTimestamp && (
+              <div style={{
+                position: 'absolute',
+                bottom: '20px', // Bottom of white border
+                left: '50%',
+                transform: 'translateX(-50%)',
+                fontFamily: font,
+                fontSize: '0.9rem',
+                color: '#666',
+                pointerEvents: 'none',
+                zIndex: 10,
+                whiteSpace: 'nowrap'
+              }}>
+                {capturedTimestamp.toLocaleDateString()} • {capturedTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </div>
+            )}
           </div>
 
           {/* Controls */}
@@ -395,21 +540,40 @@ function App() {
                 ))}
               </div>
             </div>
+          </div>
 
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button onClick={reset} style={{ flex: 1, padding: '0.8rem', background: '#444', color: 'white', border: 'none', borderRadius: '4px' }}>
-                New Photo
-              </button>
-              <button onClick={handleSave} style={{ flex: 1, padding: '0.8rem', background: 'var(--color-accent)', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
-                Save Polaroid
-              </button>
-            </div>
+          {/* Timestamp Toggle (Result Mode) */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <button
+              onClick={toggleTimestampMode}
+              style={{
+                background: '#333',
+                color: 'white',
+                border: '1px solid #444',
+                borderRadius: '20px',
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer'
+              }}
+            >
+              <span>{timestampMode === 'off' ? '📅' : (timestampMode === 'overlay' ? '📼' : 'Aa')}</span>
+              <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button onClick={reset} style={{ flex: 1, padding: '0.8rem', background: '#444', color: 'white', border: 'none', borderRadius: '4px' }}>
+              New Photo
+            </button>
+            <button onClick={handleSave} style={{ flex: 1, padding: '0.8rem', background: 'var(--color-accent)', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
+              Share Polaroid
+            </button>
           </div>
         </div>
       )}
-
-
-
       <style>{`
         @keyframes develop {
           0% { filter: brightness(0) blur(20px) grayscale(1); }
