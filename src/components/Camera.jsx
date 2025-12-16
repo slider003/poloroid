@@ -2,7 +2,7 @@ import React from 'react';
 import { useCamera } from '../hooks/useCamera';
 
 const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, onFlash, timestampMode }) => {
-  const { videoRef, error, isReady, takePhoto, switchCamera, supportsFlash, flashEnabled, toggleFlash, facingMode } = useCamera(shouldStart);
+  const { videoRef, error, isReady, takePhoto, switchCamera, flashEnabled, toggleFlash, facingMode } = useCamera(shouldStart);
   const [isImmersive, setIsImmersive] = React.useState(false);
   const [currentTime, setCurrentTime] = React.useState(new Date());
 

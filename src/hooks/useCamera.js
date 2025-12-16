@@ -20,17 +20,18 @@ export const useCamera = (shouldStart = true) => {
     useEffect(() => {
         if (!shouldStart) return;
 
+        let localStream = null;
+
         const startCamera = async () => {
-            // Stop existing stream tracks
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
+            // Stream cleanup is handled by useEffect cleanup function now
 
             try {
                 const mediaStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 1280 } },
                     audio: false,
                 });
+
+                localStream = mediaStream;
 
                 // Successfully got camera access - store in localStorage
                 localStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
@@ -68,8 +69,8 @@ export const useCamera = (shouldStart = true) => {
 
         return () => {
             // Cleanup function only runs on unmount or dependency change
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
             }
         };
     }, [facingMode, shouldStart]); // Re-run when facingMode or shouldStart changes

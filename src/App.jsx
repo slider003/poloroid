@@ -1,6 +1,12 @@
-import { useState, useRef, useEffect } from 'react'
-import html2canvas from 'html2canvas'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import './index.css'
+
+const saveAsDownload = (canvas, filename) => {
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = canvas.toDataURL('image/jpeg', 0.9);
+  link.click();
+};
 import Camera from './components/Camera'
 import PolaroidFrame from './components/PolaroidFrame'
 import RecentGallery from './components/RecentGallery'
@@ -16,14 +22,19 @@ function App() {
   const [font, setFont] = useState('Special Elite'); // Default retro font
 
   // Enforce 2-line limit and character count
+  const getMaxCaptionLength = (currentFont) => {
+    return currentFont === 'Caveat' ? 70 : 50;
+  };
+
   const handleCaptionChange = (e) => {
     const val = e.target.value;
     const lines = val.split('\n');
+    const maxLen = getMaxCaptionLength(font);
 
     // Allow if:
     // 1. Max 2 lines (length <= 2)
-    // 2. Max chars 50 (stricter limit to prevent wrapping overflow)
-    if (lines.length <= 2 && val.length <= 50) {
+    // 2. Max chars based on font
+    if (lines.length <= 2 && val.length <= maxLen) {
       setCaption(val);
     }
   };
@@ -36,7 +47,7 @@ function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const frameRef = useRef(null);
 
-  const { photos, addPhoto, updatePhoto, removePhoto, clearPhotos } = useRecentPhotos();
+  const { photos, addPhoto, updatePhoto, clearPhotos } = useRecentPhotos();
 
   // Check if user has used camera before - Removed legacy check
 
@@ -58,8 +69,10 @@ function App() {
     }, 10000);
   };
 
+
+
   // Unified save function for both Auto-save and User Download
-  const saveCurrentPolaroid = async (download = false) => {
+  const saveCurrentPolaroid = useCallback(async (download = false) => {
     if (!photo) return;
 
     try {
@@ -70,7 +83,6 @@ function App() {
       const width = 1000;
       const height = 1200;
       const padding = 60;
-      const bottomPadding = 200;
 
       canvas.width = width;
       canvas.height = height;
@@ -95,7 +107,7 @@ function App() {
           const imageData = ctx.getImageData(padding, padding, imgSize, imgSize);
           const filteredData = applyPolaroidFilter(imageData);
           ctx.putImageData(filteredData, padding, padding);
-        } catch (e) {
+        } catch {
           // Fallback
           ctx.save();
           ctx.filter = 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)';
@@ -235,7 +247,7 @@ function App() {
     } catch (err) {
       console.error("Error generating polaroid:", err);
     }
-  };
+  }, [photo, caption, filterEnabled, font, timestampMode, capturedTimestamp, currentPhotoId, addPhoto, updatePhoto]);
 
   const handleSave = () => saveCurrentPolaroid(true);
 
@@ -254,14 +266,9 @@ function App() {
       }, 1000); // Debounce 1s
       return () => clearTimeout(timer);
     }
-  }, [mode, photo, caption, filterEnabled, font, timestampMode, currentPhotoId]);
+  }, [mode, photo, caption, filterEnabled, font, timestampMode, currentPhotoId, saveCurrentPolaroid]);
 
-  const saveAsDownload = (canvas, filename) => {
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = canvas.toDataURL('image/jpeg', 0.9);
-    link.click();
-  };
+
 
   const enableCamera = () => {
     setCameraEnabled(true);
@@ -504,7 +511,7 @@ function App() {
                   value={caption}
                   onChange={handleCaptionChange}
                   placeholder="Write a caption..."
-                  maxLength={50}
+                  maxLength={getMaxCaptionLength(font)}
                   rows={2}
                   style={{
                     border: 'none',
@@ -530,7 +537,7 @@ function App() {
                   fontFamily: 'sans-serif',
                   pointerEvents: 'none'
                 }}>
-                  {50 - caption.length}
+                  {getMaxCaptionLength(font) - caption.length}
                 </div>
               </div>
             }>

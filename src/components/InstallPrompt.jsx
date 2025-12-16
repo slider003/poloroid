@@ -1,34 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const InstallPrompt = () => {
-    const [showPrompt, setShowPrompt] = useState(false);
-    const [os, setOs] = useState('');
-    const [showToast, setShowToast] = useState(false);
+    const [os] = useState(() => {
+        const userAgent = window.navigator.userAgent.toLowerCase();
+        if (/iphone|ipad|ipod/.test(userAgent)) return 'ios';
+        if (/android/.test(userAgent)) return 'android';
+        return 'desktop';
+    });
 
-    useEffect(() => {
-        // 1. Check if already standalone (installed)
+    const [showPrompt] = useState(() => {
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
             window.navigator.standalone ||
             document.referrer.includes('android-app://');
 
-        if (isStandalone) {
-            setShowPrompt(false);
-            return;
-        }
+        if (isStandalone) return false;
 
-        // 2. Identify OS
         const userAgent = window.navigator.userAgent.toLowerCase();
-        if (/iphone|ipad|ipod/.test(userAgent)) {
-            setOs('ios');
-            setShowPrompt(true);
-        } else if (/android/.test(userAgent)) {
-            setOs('android');
-            setShowPrompt(true);
-        } else {
-            setOs('desktop');
-            setShowPrompt(false);
-        }
-    }, []);
+        // Show for iOS and Android
+        if (/iphone|ipad|ipod|android/.test(userAgent)) return true;
+
+        return false;
+    });
+
+    const [showToast, setShowToast] = useState(false);
 
     const handlePromptClick = () => {
         setShowToast(true);
