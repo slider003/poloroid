@@ -282,6 +282,8 @@ function App() {
       setCaption(recentPhoto.caption || '');
       if (recentPhoto.font) setFont(recentPhoto.font);
       if (recentPhoto.filterEnabled !== undefined) setFilterEnabled(recentPhoto.filterEnabled);
+      if (recentPhoto.timestampMode) setTimestampMode(recentPhoto.timestampMode);
+      if (recentPhoto.timestamp) setCapturedTimestamp(new Date(recentPhoto.timestamp));
     } else {
       // Legacy: treat as raw, but it's likely already framed. 
       // Best effort: load it, clear caption (since it's baked in)
