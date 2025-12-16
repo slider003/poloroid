@@ -4,6 +4,7 @@ import './index.css'
 import Camera from './components/Camera'
 import PolaroidFrame from './components/PolaroidFrame'
 import RecentGallery from './components/RecentGallery'
+import InstallPrompt from './components/InstallPrompt'
 import { applyPolaroidFilter } from './utils/filters'
 import { useRecentPhotos } from './hooks/useRecentPhotos'
 import { wasCameraAccessGranted } from './hooks/useCamera'
@@ -196,8 +197,6 @@ function App() {
           caption,
           filterEnabled,
           font,
-          filterEnabled,
-          font,
           timestampMode,
           timestamp: new Date().toISOString()
         });
@@ -206,8 +205,6 @@ function App() {
           data: finalImage,
           raw: photo,
           caption,
-          filterEnabled,
-          font,
           filterEnabled,
           font,
           timestampMode,
@@ -330,7 +327,7 @@ function App() {
       </header>
 
       {mode === 'camera' && !cameraEnabled && (
-        <div style={{ width: '100%', maxWidth: '400px' }}>
+        <div style={{ width: '100%', maxWidth: '400px', paddingBottom: '80px' }}>
           <PolaroidFrame caption="Ready to snap">
             <div style={{
               width: '100%',
@@ -424,7 +421,7 @@ function App() {
       )}
 
       {mode === 'camera' && cameraEnabled && (
-        <div style={{ width: '100%', maxWidth: '400px' }}>
+        <div style={{ width: '100%', maxWidth: '400px', paddingBottom: '80px' }}>
           <PolaroidFrame caption={timestampMode === 'text' ? getCurrentTimestampDisplay() : "Ready to snap"}>
             <Camera
               onCapture={handleCapture}
@@ -496,7 +493,7 @@ function App() {
       )}
 
       {mode === 'result' && (
-        <div style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '80px' }}>
           {/* The Frame to Capture */}
           <div ref={frameRef} style={{ display: 'inline-block', position: 'relative' }}>
             <PolaroidFrame caption={
@@ -682,6 +679,7 @@ function App() {
         zIndex: 99999
       }}
       />
+      <InstallPrompt />
     </main>
   )
 }
