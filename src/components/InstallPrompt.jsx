@@ -20,14 +20,14 @@ const InstallPrompt = () => {
         const userAgent = window.navigator.userAgent.toLowerCase();
         if (/iphone|ipad|ipod/.test(userAgent)) {
             setOs('ios');
+            setShowPrompt(true);
         } else if (/android/.test(userAgent)) {
             setOs('android');
+            setShowPrompt(true);
         } else {
             setOs('desktop');
+            setShowPrompt(false);
         }
-
-        // Show prompt if not standalone
-        setShowPrompt(true);
     }, []);
 
     const handlePromptClick = () => {
