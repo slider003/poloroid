@@ -13,6 +13,19 @@ function App() {
   const [photo, setPhoto] = useState(null);
   const [caption, setCaption] = useState('');
   const [font, setFont] = useState('Special Elite'); // Default retro font
+
+  // Enforce 2-line limit and character count
+  const handleCaptionChange = (e) => {
+    const val = e.target.value;
+    const lines = val.split('\n');
+
+    // Allow if:
+    // 1. Max 2 lines (length <= 2)
+    // 2. Max chars 50 (stricter limit to prevent wrapping overflow)
+    if (lines.length <= 2 && val.length <= 50) {
+      setCaption(val);
+    }
+  };
   const [filterEnabled, setFilterEnabled] = useState(true);
   const [cameraEnabled, setCameraEnabled] = useState(() => wasCameraAccessGranted());
   const [currentPhotoId, setCurrentPhotoId] = useState(null);
@@ -103,8 +116,44 @@ function App() {
         ctx.font = `40px "${fontFamily}"`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        // Position caption closer to image - approximately 30px below image
-        ctx.fillText(caption, width / 2, imgSize + padding + 50);
+
+        // Split caption into lines (max 2)
+        const words = caption.split(' ');
+        let lines = [];
+        let currentLine = words[0];
+
+        // Basic line breaking
+        for (let i = 1; i < words.length; i++) {
+          if (!currentLine) {
+            currentLine = words[i];
+            continue;
+          }
+          const testLine = currentLine + " " + words[i];
+          const metrics = ctx.measureText(testLine);
+          if (metrics.width < width - 100) { // 50px padding on each side
+            currentLine = testLine;
+          } else {
+            lines.push(currentLine);
+            currentLine = words[i];
+          }
+        }
+        lines.push(currentLine);
+
+        // Limit to 2 lines
+        if (lines.length > 2) {
+          // If we really messed up wrapping, force truncate or just take first 2
+          lines = lines.slice(0, 2);
+        }
+
+        // Draw lines
+        const lineHeight = 50;
+        const startY = imgSize + padding + 80; // Increased spacing (was 50)
+
+        lines.forEach((line, index) => {
+          // If 2 lines, shift first one up slightly to center the group
+          const yOffset = lines.length > 1 ? (index * lineHeight) - (lineHeight * 0.5) : 0;
+          ctx.fillText(line, width / 2, startY + yOffset);
+        });
       }
 
       // 5. Draw Timestamp
@@ -114,10 +163,10 @@ function App() {
         const timeStr = timestampToUse.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         const timestampText = `${dateStr} ${timeStr}`;
 
-        ctx.font = '24px "Courier New", monospace';
+        ctx.font = '32px "Courier New", monospace'; // Increased from 24px
         ctx.fillStyle = '#ff9966'; // Burnt orange/digital look
         ctx.shadowColor = 'black';
-        ctx.shadowBlur = 2;
+        ctx.shadowBlur = 4; // Softer shadow for "Saved" look
         ctx.textAlign = 'right';
         ctx.fillText(timestampText, imgSize + padding - 20, imgSize + padding - 20);
         ctx.shadowBlur = 0; // Reset
@@ -451,23 +500,40 @@ function App() {
           {/* The Frame to Capture */}
           <div ref={frameRef} style={{ display: 'inline-block', position: 'relative' }}>
             <PolaroidFrame caption={
-              <input
-                type="text"
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                placeholder="Write a caption..."
-                maxLength={30}
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  fontFamily: font,
-                  textAlign: 'center',
-                  width: '100%',
-                  fontSize: '1.1rem',
-                  outline: 'none',
-                  color: '#333'
-                }}
-              />
+              <div style={{ position: 'relative', width: '100%' }}>
+                <textarea
+                  value={caption}
+                  onChange={handleCaptionChange}
+                  placeholder="Write a caption..."
+                  maxLength={50}
+                  rows={2}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    fontFamily: font,
+                    textAlign: 'center',
+                    width: '100%',
+                    fontSize: '1.2rem',
+                    outline: 'none',
+                    color: '#333',
+                    resize: 'none',
+                    overflow: 'hidden',
+                    lineHeight: '1.2',
+                    height: '3rem' // Enforce 2 lines height
+                  }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  bottom: '-25px', // Push into the bottom padding of the polaroid
+                  right: '0px',
+                  fontSize: '0.65rem',
+                  color: '#aaa',
+                  fontFamily: 'sans-serif',
+                  pointerEvents: 'none'
+                }}>
+                  {50 - caption.length}
+                </div>
+              </div>
             }>
               <img
                 src={photo}
@@ -479,24 +545,24 @@ function App() {
                   filter: filterEnabled ? 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)' : 'none'
                 }}
               />
-            </PolaroidFrame>
 
-            {/* Timestamp Overlay for Result Mode */}
-            {timestampMode === 'overlay' && capturedTimestamp && (
-              <div style={{
-                position: 'absolute',
-                bottom: '95px', // Bottom of image preview, just above white border
-                right: '40px',
-                fontFamily: '"Courier New", monospace',
-                color: '#ff9966',
-                fontSize: '1.2rem',
-                textShadow: '2px 2px 0px #000000',
-                pointerEvents: 'none',
-                zIndex: 10
-              }}>
-                {capturedTimestamp.toLocaleDateString().replace(/\//g, '.')} {capturedTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-              </div>
-            )}
+              {/* Timestamp Overlay for Result Mode - NOW INSIDE IMAGE AREA */}
+              {timestampMode === 'overlay' && capturedTimestamp && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '10px',
+                  right: '15px',
+                  fontFamily: '"Courier New", monospace',
+                  color: '#ff9966',
+                  fontSize: '0.9rem', // Reduced to match new scale
+                  textShadow: '1px 1px 2px #000000',
+                  pointerEvents: 'none',
+                  zIndex: 10
+                }}>
+                  {capturedTimestamp.toLocaleDateString().replace(/\//g, '.')} {capturedTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                </div>
+              )}
+            </PolaroidFrame>
 
             {/* Text Timestamp for Result Mode - Bottom of white border */}
             {timestampMode === 'text' && capturedTimestamp && (

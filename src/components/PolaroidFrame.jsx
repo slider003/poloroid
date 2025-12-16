@@ -1,15 +1,15 @@
 import React from 'react';
 
 const PolaroidFrame = ({ children, caption, className = '' }) => {
-    return (
-        <div className={`polaroid-frame ${className}`}>
-            <div className="polaroid-image-area">
-                {children}
-            </div>
-            <div className="polaroid-caption">
-                {caption}
-            </div>
-            <style>{`
+  return (
+    <div className={`polaroid-frame ${className}`}>
+      <div className="polaroid-image-area">
+        {children}
+      </div>
+      <div className="polaroid-caption">
+        {caption}
+      </div>
+      <style>{`
         .polaroid-frame {
           background: var(--color-frame);
           padding: 1rem 1rem 3rem 1rem;
@@ -30,6 +30,7 @@ const PolaroidFrame = ({ children, caption, className = '' }) => {
           height: 300px;
           overflow: hidden;
           border: 1px solid #eee;
+          position: relative;
         }
         .polaroid-caption {
           font-family: 'Courier Prime', monospace; /* Fallback if global font fails */
@@ -46,8 +47,8 @@ const PolaroidFrame = ({ children, caption, className = '' }) => {
           }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default PolaroidFrame;

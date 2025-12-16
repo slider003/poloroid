@@ -132,12 +132,12 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
         }
         .timestamp-overlay {
           position: absolute;
-          bottom: 5px; /* Bottom of camera feed */
-          right: 20px;
+          bottom: 10px; /* Bottom of camera feed */
+          right: 15px;
           font-family: 'Courier New', monospace;
           color: #ff9966;
-          font-size: 1.2rem;
-          text-shadow: 2px 2px 0px #000000;
+          font-size: 0.9rem;
+          text-shadow: 1px 1px 2px #000000;
           pointer-events: none;
           z-index: 1;
         }
