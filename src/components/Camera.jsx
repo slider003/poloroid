@@ -94,7 +94,7 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
         className={`control-btn filter-btn ${isImmersive ? 'hidden' : ''}`}
         onClick={onToggleFilter}
         aria-label="Toggle filter"
-        style={{ opacity: filterEnabled ? 1 : 0.5 }}
+        style={isImmersive ? {} : { opacity: filterEnabled ? 1 : 0.5 }}
       >
         ✨
       </button>

@@ -407,7 +407,7 @@ function App() {
                 cursor: 'pointer'
               }}
             >
-              <span>{timestampMode === 'off' ? '📅' : (timestampMode === 'overlay' ? '📼' : 'Aa')}</span>
+
               <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
             </button>
           </div>
@@ -450,7 +450,7 @@ function App() {
                 cursor: 'pointer'
               }}
             >
-              <span>{timestampMode === 'off' ? '📅' : (timestampMode === 'overlay' ? '📼' : 'Aa')}</span>
+
               <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
             </button>
           </div>
@@ -623,7 +623,7 @@ function App() {
                 cursor: 'pointer'
               }}
             >
-              <span>{timestampMode === 'off' ? '📅' : (timestampMode === 'overlay' ? '📼' : 'Aa')}</span>
+
               <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
             </button>
           </div>
