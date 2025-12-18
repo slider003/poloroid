@@ -25,7 +25,7 @@ No downloads. No accounts. Just pure nostalgia.
 ## 🎯 Features
 
 - **📷 Live Camera Preview** - See yourself through a vintage lens with real-time filter preview
-- **⏱️ Authentic Development Animation** - Experience the iconic 10-second photo development process
+- **⏱️ Authentic Development Animation** - Experience a nostalgic photo development process
 - **🎨 Moment Filter** - Automatic sepia, contrast, and saturation adjustments for that classic look
 - **✍️ Custom Captions** - Add personalized text with retro typewriter, handwritten, or clean fonts
 - **🔄 Camera Switching** - Toggle between front and back cameras on mobile devices
@@ -62,10 +62,10 @@ The app will be available at `http://localhost:5173`
 ## 🎨 How It Works
 
 1. **📸 Snap** - Point your camera and click the shutter button
-2. **⏳ Develop** - Watch your photo emerge over 10 seconds, just like the real thing
+2. **⏳ Develop** - Watch your photo emerge over 5 seconds
 3. **✏️ Caption** - Add a personal message with your choice of retro fonts
 4. **💾 Auto-Save** - Your photos are automatically saved to your local gallery
-5. **📤 Share** - Download or share your Moment masterpiece
+5. **📤 Share** - Download or share your Moment
 
 ## 🛠️ Tech Stack
 
@@ -133,41 +133,3 @@ Unlike CSS filters, our approach ensures consistent output across all devices an
 | Chrome Mobile | Android 90+ | ✅ Full support |
 
 **Requires:** Camera access, IndexedDB, ES6+ support
-
-## 📝 Roadmap
-
-- [x] Photo gallery with persistence
-- [x] Auto-save functionality
-- [ ] Custom filter intensity controls
-- [ ] Additional retro frame styles
-- [ ] AI-powered caption suggestions
-- [ ] Batch photo processing
-- [ ] Social media preset exports
-
-## 🤝 Contributing
-
-Contributions are what make the open-source community amazing! Any contributions you make are **greatly appreciated**.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## 💬 Contact
-
-Project Link: [https://github.com/slider003/poloroid](https://github.com/slider003/poloroid)
-
----
-
-<div align="center">
-
-**Made with ❤️ for instant photography enthusiasts**
-
-*Remember: the best photos are the ones you actually take*
-
-</div>
