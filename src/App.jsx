@@ -8,10 +8,10 @@ const saveAsDownload = (canvas, filename) => {
   link.click();
 };
 import Camera from './components/Camera'
-import PolaroidFrame from './components/PolaroidFrame'
+import MomentFrame from './components/MomentFrame'
 import RecentGallery from './components/RecentGallery'
 import InstallPrompt from './components/InstallPrompt'
-import { applyPolaroidFilter } from './utils/filters'
+import { applyMomentFilter } from './utils/filters'
 import { useRecentPhotos } from './hooks/useRecentPhotos'
 import { wasCameraAccessGranted } from './hooks/useCamera'
 
@@ -72,11 +72,11 @@ function App() {
 
 
   // Unified save function for both Auto-save and User Download
-  const saveCurrentPolaroid = useCallback(async (download = false) => {
+  const saveCurrentMoment = useCallback(async (download = false) => {
     if (!photo) return;
 
     try {
-      // Manually create the polaroid image
+      // Manually create the moment image
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
@@ -105,7 +105,7 @@ function App() {
       if (filterEnabled) {
         try {
           const imageData = ctx.getImageData(padding, padding, imgSize, imgSize);
-          const filteredData = applyPolaroidFilter(imageData);
+          const filteredData = applyMomentFilter(imageData);
           ctx.putImageData(filteredData, padding, padding);
         } catch {
           // Fallback
@@ -230,7 +230,7 @@ function App() {
         canvas.toBlob(async (blob) => {
           const timestamp = Date.now();
           const safeCaption = caption ? caption.replace(/[^a-z0-9]/gi, '_').toLowerCase() : '';
-          const filename = safeCaption ? `digitalpolaroid_${safeCaption}.jpg` : `digitalpolaroid_${timestamp}.jpg`;
+          const filename = safeCaption ? `moments_${safeCaption}.jpg` : `moments_${timestamp}.jpg`;
           const file = new File([blob], filename, { type: 'image/jpeg' });
 
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -245,11 +245,11 @@ function App() {
         }, 'image/jpeg', 0.9);
       }
     } catch (err) {
-      console.error("Error generating polaroid:", err);
+      console.error("Error generating moment:", err);
     }
   }, [photo, caption, filterEnabled, font, timestampMode, capturedTimestamp, currentPhotoId, addPhoto, updatePhoto]);
 
-  const handleSave = () => saveCurrentPolaroid(true);
+  const handleSave = () => saveCurrentMoment(true);
 
   // Toggle Timestamp Mode
   const toggleTimestampMode = () => {
@@ -262,11 +262,11 @@ function App() {
   useEffect(() => {
     if (mode === 'result' && photo) {
       const timer = setTimeout(() => {
-        saveCurrentPolaroid(false);
+        saveCurrentMoment(false);
       }, 1000); // Debounce 1s
       return () => clearTimeout(timer);
     }
-  }, [mode, photo, caption, filterEnabled, font, timestampMode, currentPhotoId, saveCurrentPolaroid]);
+  }, [mode, photo, caption, filterEnabled, font, timestampMode, currentPhotoId, saveCurrentMoment]);
 
 
 
@@ -327,7 +327,7 @@ function App() {
   return (
     <main>
       <header style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1rem' }}>
-        <h1>Digital Polaroid</h1>
+        <h1>Moments</h1>
         {!('ontouchstart' in window || navigator.maxTouchPoints > 0) && (
           <p style={{ color: '#666', fontSize: '0.8rem', margin: '0.5rem 0 0 0' }}>
             Works best on mobile devices
@@ -337,7 +337,7 @@ function App() {
 
       {mode === 'camera' && !cameraEnabled && (
         <div style={{ width: '100%', maxWidth: '400px', paddingBottom: '80px' }}>
-          <PolaroidFrame caption="Ready to snap">
+          <MomentFrame caption="Ready to snap">
             <div style={{
               width: '100%',
               height: '100%',
@@ -358,7 +358,7 @@ function App() {
                 fontWeight: 'bold',
                 margin: 0
               }}>
-                Welcome to Digital Polaroid
+                Welcome to Moments
               </h2>
               <p style={{
                 color: '#aaa',
@@ -397,7 +397,7 @@ function App() {
               </div>
 
             </div>
-          </PolaroidFrame>
+          </MomentFrame>
 
           {/* Timestamp Toggle (Outside Frame) */}
           <div style={{ width: '100%', display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
@@ -431,7 +431,7 @@ function App() {
 
       {mode === 'camera' && cameraEnabled && (
         <div style={{ width: '100%', maxWidth: '400px', paddingBottom: '80px' }}>
-          <PolaroidFrame caption={timestampMode === 'text' ? getCurrentTimestampDisplay() : "Ready to snap"}>
+          <MomentFrame caption={timestampMode === 'text' ? getCurrentTimestampDisplay() : "Ready to snap"}>
             <Camera
               onCapture={handleCapture}
               filterEnabled={filterEnabled}
@@ -440,7 +440,7 @@ function App() {
               onFlash={handleFlash}
               timestampMode={timestampMode}
             />
-          </PolaroidFrame>
+          </MomentFrame>
 
           {/* Timestamp Toggle (Outside Frame) */}
           <div style={{ width: '100%', display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
@@ -474,7 +474,7 @@ function App() {
 
       {mode === 'developing' && (
         <div style={{ width: '100%', maxWidth: '400px', animation: 'pulse 2s infinite' }}>
-          <PolaroidFrame caption="Developing...">
+          <MomentFrame caption="Developing...">
             <div style={{
               width: '100%',
               height: '100%',
@@ -497,7 +497,7 @@ function App() {
                 }}
               />
             </div>
-          </PolaroidFrame>
+          </MomentFrame>
         </div>
       )}
 
@@ -505,7 +505,7 @@ function App() {
         <div style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '80px' }}>
           {/* The Frame to Capture */}
           <div ref={frameRef} style={{ display: 'inline-block', position: 'relative' }}>
-            <PolaroidFrame caption={
+            <MomentFrame caption={
               <div style={{ position: 'relative', width: '100%' }}>
                 <textarea
                   value={caption}
@@ -530,7 +530,7 @@ function App() {
                 />
                 <div style={{
                   position: 'absolute',
-                  bottom: '-25px', // Push into the bottom padding of the polaroid
+                  bottom: '-25px', // Push into the bottom padding of the moment
                   right: '0px',
                   fontSize: '0.65rem',
                   color: '#aaa',
@@ -568,7 +568,7 @@ function App() {
                   {capturedTimestamp.toLocaleDateString().replace(/\//g, '.')} {capturedTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
                 </div>
               )}
-            </PolaroidFrame>
+            </MomentFrame>
 
             {/* Text Timestamp for Result Mode - Bottom of white border */}
             {timestampMode === 'text' && capturedTimestamp && (
@@ -642,7 +642,7 @@ function App() {
               New Photo
             </button>
             <button onClick={handleSave} style={{ flex: 1, padding: '0.8rem', background: 'var(--color-accent)', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
-              Share Polaroid
+              Share Moment
             </button>
           </div>
         </div>

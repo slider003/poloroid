@@ -5,7 +5,7 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/poloroid/',
+  base: '/moments/',
   plugins: [
     react(),
     basicSsl(),
@@ -13,9 +13,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'Digital Polaroid',
-        short_name: 'Polaroid',
-        description: 'Turn your photos into digital polaroids',
+        name: 'Moments',
+        short_name: 'Moments',
+        description: 'Turn your photos into digital moments',
         theme_color: '#ffffff',
         icons: [
           {

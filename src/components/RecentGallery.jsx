@@ -21,7 +21,7 @@ const RecentGallery = ({ photos, onSelect, onClear }) => {
               onClick={() => onSelect(photo)}
               style={{ zIndex: photos.length - index }}
             >
-              <img src={photo.data} alt={`Recent polaroid ${index + 1}`} />
+              <img src={photo.data} alt={`Recent moment ${index + 1}`} />
             </div>
           ))}
         </div>
@@ -89,8 +89,8 @@ const RecentGallery = ({ photos, onSelect, onClear }) => {
 
         .gallery-item {
           flex: 0 0 80px; /* Fixed width for cards */
-          height: 96px; /* Aspect ratio roughly matching polaroid */
-          /* Removed background and padding to avoid double-polaroid effect */
+          height: 96px; /* Aspect ratio roughly matching moment */
+          /* Removed background and padding to avoid double-moment effect */
           /* background: white; */
           /* padding: 4px 4px 12px 4px; */ 
           box-shadow: 0 2px 8px rgba(0,0,0,0.3);

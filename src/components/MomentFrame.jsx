@@ -1,16 +1,16 @@
 import React from 'react';
 
-const PolaroidFrame = ({ children, caption, className = '' }) => {
+const MomentFrame = ({ children, caption, className = '' }) => {
   return (
-    <div className={`polaroid-frame ${className}`}>
-      <div className="polaroid-image-area">
+    <div className={`moment-frame ${className}`}>
+      <div className="moment-image-area">
         {children}
       </div>
-      <div className="polaroid-caption">
+      <div className="moment-caption">
         {caption}
       </div>
       <style>{`
-        .polaroid-frame {
+        .moment-frame {
           background: var(--color-frame);
           padding: 1rem 1rem 3rem 1rem;
           box-shadow: var(--shadow-soft);
@@ -19,12 +19,12 @@ const PolaroidFrame = ({ children, caption, className = '' }) => {
           transition: transform 0.3s ease;
           max-width: 100%;
         }
-        .polaroid-frame:hover {
+        .moment-frame:hover {
           transform: rotate(0deg) scale(1.01);
           box-shadow: var(--shadow-hard);
           z-index: 10;
         }
-        .polaroid-image-area {
+        .moment-image-area {
           background: #222;
           width: 300px;
           height: 300px;
@@ -32,7 +32,7 @@ const PolaroidFrame = ({ children, caption, className = '' }) => {
           border: 1px solid #eee;
           position: relative;
         }
-        .polaroid-caption {
+        .moment-caption {
           font-family: 'Courier Prime', monospace; /* Fallback if global font fails */
           color: #333;
           margin-top: 1rem;
@@ -40,7 +40,7 @@ const PolaroidFrame = ({ children, caption, className = '' }) => {
           min-height: 1.5em;
         }
         @media (max-width: 350px) {
-          .polaroid-image-area {
+          .moment-image-area {
             width: 100%;
             aspect-ratio: 1/1;
             height: auto;
@@ -51,4 +51,4 @@ const PolaroidFrame = ({ children, caption, className = '' }) => {
   );
 };
 
-export default PolaroidFrame;
+export default MomentFrame;

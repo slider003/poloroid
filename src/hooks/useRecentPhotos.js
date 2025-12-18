@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { get, set } from 'idb-keyval';
 
-const STORAGE_KEY = 'polaroid_recent_photos';
+const STORAGE_KEY = 'moments_recent_photos';
 const MAX_PHOTOS = 10;
 
 export const useRecentPhotos = () => {

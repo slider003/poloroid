@@ -1,4 +1,4 @@
-export const applyPolaroidFilter = (imageData) => {
+export const applyMomentFilter = (imageData) => {
     const data = imageData.data;
     const len = data.length;
 

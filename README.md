@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📸 Digital Polaroid
+# 📸 Moments
 
 *Capture the nostalgia of instant photography, reimagined for the web*
 
@@ -10,15 +10,15 @@
 [![Vite](https://img.shields.io/badge/Vite-7.2.4-646cff.svg?logo=vite)](https://vitejs.dev)
 [![PWA](https://img.shields.io/badge/PWA-enabled-5A0FC8.svg)](https://web.dev/progressive-web-apps/)
 
-[Live Demo](https://slider003.github.io/poloroid/) · [Report Bug](https://github.com/slider003/poloroid/issues) · [Request Feature](https://github.com/slider003/poloroid/issues)
+[Live Demo](https://slider003.github.io/moments/) · [Report Bug](https://github.com/slider003/poloroid/issues) · [Request Feature](https://github.com/slider003/poloroid/issues)
 
 </div>
 
 ---
 
-## ✨ What is Digital Polaroid?
+## ✨ What is Moments?
 
-Transform your everyday moments into vintage memories with **Digital Polaroid** - a Progressive Web App that brings the magic of instant photography to your browser. Watch your photos develop in real-time, add handwritten captions, and share authentic Polaroid-style memories with friends.
+Transform your everyday moments into vintage memories with **Moments** - a Progressive Web App that brings the magic of instant photography to your browser. Watch your photos develop in real-time, add handwritten captions, and share authentic Moments with friends.
 
 No downloads. No accounts. Just pure nostalgia.
 
@@ -26,7 +26,7 @@ No downloads. No accounts. Just pure nostalgia.
 
 - **📷 Live Camera Preview** - See yourself through a vintage lens with real-time filter preview
 - **⏱️ Authentic Development Animation** - Experience the iconic 10-second photo development process
-- **🎨 Polaroid Filter** - Automatic sepia, contrast, and saturation adjustments for that classic look
+- **🎨 Moment Filter** - Automatic sepia, contrast, and saturation adjustments for that classic look
 - **✍️ Custom Captions** - Add personalized text with retro typewriter, handwritten, or clean fonts
 - **🔄 Camera Switching** - Toggle between front and back cameras on mobile devices
 - **💾 Auto-Save & Gallery** - Smart auto-saving ensures you never lose a memory, stored safely on your device
@@ -38,14 +38,14 @@ No downloads. No accounts. Just pure nostalgia.
 
 ## 🚀 Quick Start
 ### Try It Now
-Visit **[slider003.github.io/poloroid](https://slider003.github.io/poloroid/)** and click "Allow" when prompted for camera access.
+Visit **[slider003.github.io/moments](https://slider003.github.io/moments/)** and click "Allow" when prompted for camera access.
 
 ### Run Locally
 
 ```bash
 # Clone the repository
 git clone https://github.com/slider003/poloroid.git
-cd poloroid
+cd moments
 
 # Install dependencies
 npm install
@@ -65,7 +65,7 @@ The app will be available at `http://localhost:5173`
 2. **⏳ Develop** - Watch your photo emerge over 10 seconds, just like the real thing
 3. **✏️ Caption** - Add a personal message with your choice of retro fonts
 4. **💾 Auto-Save** - Your photos are automatically saved to your local gallery
-5. **📤 Share** - Download or share your Polaroid masterpiece
+5. **📤 Share** - Download or share your Moment masterpiece
 
 ## 🛠️ Tech Stack
 
@@ -82,17 +82,17 @@ The app will be available at `http://localhost:5173`
 ## 📦 Project Structure
 
 ```
-poloroid/
+moments/
 ├── src/
 │   ├── components/
 │   │   ├── Camera.jsx          # Camera UI and controls
-│   │   ├── PolaroidFrame.jsx   # Polaroid frame wrapper
+│   │   ├── MomentFrame.jsx     # Moment frame wrapper
 │   │   └── RecentGallery.jsx   # Gallery for saved photos
 │   ├── hooks/
 │   │   ├── useCamera.js        # Camera logic & permission handling
 │   │   └── useRecentPhotos.js  # IndexedDB storage management
 │   ├── utils/
-│   │   └── filters.js          # Pixel-level Polaroid filter
+│   │   └── filters.js          # Pixel-level Moment filter
 │   ├── App.jsx                 # Main app orchestration
 │   └── main.jsx                # React entry point
 ├── .github/workflows/
@@ -102,7 +102,7 @@ poloroid/
 
 ## 🎭 Filter Technology
 
-Our Polaroid filter uses **pixel-level manipulation** for authentic results:
+Our Moment filter uses **pixel-level manipulation** for authentic results:
 
 ```javascript
 // Real-time processing of every pixel
