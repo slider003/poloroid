@@ -25,6 +25,7 @@ export const useCamera = (shouldStart = true) => {
         let localStream = null;
 
         const startCamera = async () => {
+            setIsReady(false);
             // Stream cleanup is handled by useEffect cleanup function now
 
             try {
@@ -52,12 +53,20 @@ export const useCamera = (shouldStart = true) => {
                     }
 
                     if (capabilities.zoom) {
+                        const minZoom = capabilities.zoom.min || 1;
                         setZoomRange({
                             min: capabilities.zoom.min,
                             max: capabilities.zoom.max,
                             step: capabilities.zoom.step || 0.1
                         });
-                        setZoom(capabilities.zoom.min || 1);
+                        setZoom(minZoom);
+
+                        // Immediately apply the initial zoom to the track
+                        try {
+                            await track.applyConstraints({ advanced: [{ zoom: minZoom }] });
+                        } catch (zErr) {
+                            console.warn("Could not apply initial zoom:", zErr);
+                        }
                     } else {
                         setZoomRange(null);
                         setZoom(1);
@@ -105,9 +114,10 @@ export const useCamera = (shouldStart = true) => {
             localStorage.setItem(CAMERA_FACING_MODE_KEY, newMode);
             return newMode;
         });
-        // Reset zoom when switching
+        // Reset zoom and ready state when switching
         setZoom(1);
         setZoomRange(null);
+        setIsReady(false);
     }, []);
 
     const changeZoom = useCallback(async (level) => {

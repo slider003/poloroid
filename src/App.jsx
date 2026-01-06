@@ -46,6 +46,9 @@ function App() {
   const [capturedTimestamp, setCapturedTimestamp] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [zoomInfo, setZoomInfo] = useState(null);
+  const [immersiveTap, setImmersiveTap] = useState(false);
+  const [globalCaptureTrigger, setGlobalCaptureTrigger] = useState(0);
+  const [toast, setToast] = useState(null);
   const frameRef = useRef(null);
   const cameraAreaRef = useRef(null);
   const zoomSliderRef = useRef(null);
@@ -66,6 +69,8 @@ function App() {
     setCapturedTimestamp(new Date());
     setCurrentPhotoId(null); // Reset session ID for new photo
     setMode('developing');
+    setImmersiveTap(false);
+    setGlobalCaptureTrigger(0);
 
     // Visual wait (10s)
     setTimeout(() => {
@@ -84,6 +89,7 @@ function App() {
       setCapturedTimestamp(new Date());
       setCurrentPhotoId(null);
       setMode('developing');
+      setImmersiveTap(false);
 
       // Visual wait (10s)
       setTimeout(() => {
@@ -321,20 +327,50 @@ function App() {
       zoomSliderRef.current.style.pointerEvents = 'auto';
     };
 
+    // Initial updates
     updatePosition();
+    // Second pass to catch any late layout changes
+    const timer = setTimeout(updatePosition, 100);
+
+    const observer = new ResizeObserver(updatePosition);
+    if (cameraAreaRef.current) observer.observe(cameraAreaRef.current);
 
     window.addEventListener('scroll', updatePosition, { passive: true });
     window.addEventListener('resize', updatePosition, { passive: true });
 
     return () => {
+      clearTimeout(timer);
+      observer.disconnect();
       window.removeEventListener('scroll', updatePosition);
       window.removeEventListener('resize', updatePosition);
     };
-  }, [zoomInfo?.isReady, mode]);
+  }, [zoomInfo, mode]);
   const toggleTimestampMode = () => {
     const modes = ['overlay', 'text', 'off'];
     const nextIndex = (modes.indexOf(timestampMode) + 1) % modes.length;
     setTimestampMode(modes[nextIndex]);
+  };
+
+  const toggleImmersiveMode = () => {
+    const newVal = !immersiveTap;
+    setImmersiveTap(newVal);
+
+    setToast(newVal
+      ? "Full-screen Tap Mode Enabled: tap anywhere to capture"
+      : "Full-screen Tap Mode Disabled"
+    );
+
+    setTimeout(() => {
+      setToast(null);
+    }, 1500);
+  };
+
+  const handleGlobalClick = (e) => {
+    if (immersiveTap && mode === 'camera' && photo === null) {
+      // Avoid triggering if clicking any button (though they should be faded/disabled)
+      if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+      setGlobalCaptureTrigger(prev => prev + 1);
+    }
   };
 
   // Auto-save effect: Trigger when entering result mode or changing caption/settings
@@ -358,6 +394,8 @@ function App() {
     setPhoto(null);
     setCaption('');
     setMode('camera');
+    setImmersiveTap(false);
+    setGlobalCaptureTrigger(0);
     // Keep camera enabled so we don't show the welcome screen again
   };
 
@@ -404,11 +442,14 @@ function App() {
   };
 
   return (
-    <main>
-      <header style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1rem' }}>
+    <main
+      className={`app-container ${immersiveTap && mode === 'camera' && cameraEnabled ? 'immersive-active' : ''}`}
+      onClick={handleGlobalClick}
+    >
+      <header className={`app-header ${immersiveTap && mode === 'camera' && cameraEnabled ? 'faded' : ''}`}>
         <h1>Moments</h1>
         {!('ontouchstart' in window || navigator.maxTouchPoints > 0) && (
-          <p style={{ color: '#666', fontSize: '0.8rem', margin: '0.5rem 0 0 0' }}>
+          <p style={{ color: '#666', fontSize: '0.8rem', marginTop: '0.5rem' }}>
             Works best on mobile devices
           </p>
         )}
@@ -430,22 +471,11 @@ function App() {
               gap: '1rem',
               overflow: 'hidden'
             }}>
-              <div style={{ fontSize: '3rem', marginTop: '0.5rem' }}>📷</div>
-              <h2 style={{
-                color: 'white',
-                fontSize: '1.2rem',
-                fontWeight: 'bold',
-                margin: 0
-              }}>
+              <div style={{ fontSize: '3rem', marginTop: '0.5rem' }}>📸</div>
+              <h2 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>
                 Welcome to Moments
               </h2>
-              <p style={{
-                color: '#aaa',
-                fontSize: '0.9rem',
-                lineHeight: '1.5',
-                margin: 0,
-                maxWidth: '280px'
-              }}>
+              <p style={{ color: '#aaa', fontSize: '0.9rem', lineHeight: '1.5', margin: 0, maxWidth: '280px' }}>
                 Tap below to begin capturing memories
               </p>
               <button
@@ -462,12 +492,9 @@ function App() {
                   transition: 'all 0.2s',
                   marginTop: '0.5rem'
                 }}
-                onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
-                onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
               >
                 Turn on camera
               </button>
-
 
               <div style={{ marginTop: '1rem', padding: '0 1rem' }}>
                 <p style={{ color: '#666', fontSize: '0.75rem', margin: 0 }}>
@@ -475,53 +502,90 @@ function App() {
                   <br />Tap 'AA' &gt; Website Settings &gt; Camera &gt; Allow
                 </p>
               </div>
-
             </div>
           </MomentFrame>
 
-          {/* Timestamp Toggle (Outside Frame) */}
+          {/* Combined Timestamp and Import Toggle */}
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', margin: '1rem 0' }}>
-            <button
-              onClick={toggleTimestampMode}
-              style={{
-                background: '#333',
-                color: 'white',
-                border: '1px solid #444',
-                borderRadius: '20px',
-                padding: '0.5rem 1rem',
-                fontSize: '0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: 'pointer'
-              }}
-            >
-              <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
-            </button>
-            <button
-              onClick={triggerImport}
-              style={{
-                background: '#222',
-                color: '#aaa',
-                border: '1px solid #333',
-                borderRadius: '20px',
-                padding: '0.4rem 0.8rem',
-                fontSize: '0.8rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                cursor: 'pointer'
-              }}
-            >
-              <span>🖼️ Import Image</span>
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+              <div style={{ width: '130px', height: '40px', position: 'relative' }}>
+                <button
+                  onClick={toggleImmersiveMode}
+                  className={`immersive-toggle-btn ${immersiveTap ? 'active-floating' : ''}`}
+                  style={{
+                    background: immersiveTap ? 'var(--color-accent)' : '#333',
+                    color: 'white',
+                    border: immersiveTap ? 'none' : '1px solid #444',
+                    borderRadius: '40px',
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.9rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    cursor: 'pointer',
+                    zIndex: 10001,
+                    transition: 'background 0.3s ease, border 0.3s ease, color 0.3s ease',
+                    width: '100%',
+                    height: '100%',
+                    margin: 0,
+                    whiteSpace: 'nowrap'
+                  }}
+                  title="Tap anywhere to capture"
+                >
+                  <span>{immersiveTap ? 'Tap Mode On' : 'Tap Mode Off'}</span>
+                </button>
+              </div>
+
+              <div className={immersiveTap ? 'faded' : ''} style={{ transition: 'opacity 0.3s ease' }}>
+                <button
+                  onClick={toggleTimestampMode}
+                  style={{
+                    background: '#333',
+                    color: 'white',
+                    border: '1px solid #444',
+                    borderRadius: '40px',
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.9rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className={immersiveTap ? 'faded' : ''} style={{ transition: 'opacity 0.3s ease' }}>
+              <button
+                onClick={triggerImport}
+                style={{
+                  background: '#222',
+                  color: '#aaa',
+                  border: '1px solid #333',
+                  borderRadius: '20px',
+                  padding: '0.4rem 0.8rem',
+                  fontSize: '0.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <span>Import Image</span>
+              </button>
+            </div>
           </div>
 
-          <RecentGallery
-            photos={photos}
-            onSelect={handleSelectRecent}
-            onClear={clearPhotos}
-          />
+          <div className={immersiveTap ? 'faded' : ''} style={{ transition: 'opacity 0.3s ease' }}>
+            <RecentGallery
+              photos={photos}
+              onSelect={handleSelectRecent}
+              onClear={clearPhotos}
+            />
+          </div>
         </div>
       )}
 
@@ -538,11 +602,12 @@ function App() {
                   onFlash={handleFlash}
                   timestampMode={timestampMode}
                   onZoomUpdate={setZoomInfo}
+                  immersiveTap={immersiveTap}
+                  globalCaptureTrigger={globalCaptureTrigger}
                 />
               </div>
             </MomentFrame>
 
-            {/* External Zoom Slider - Connected to Right Side of Phone */}
             {zoomInfo?.zoomRange && (
               <div
                 ref={zoomSliderRef}
@@ -553,7 +618,7 @@ function App() {
                   transform: 'translateY(-50%)',
                   background: 'rgba(0, 0, 0, 0.85)',
                   padding: '24px 8px 24px 12px',
-                  borderRadius: '30px 0 0 30px', // Cutoff on right
+                  borderRadius: '30px 0 0 30px',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   borderRight: 'none',
                   display: 'flex',
@@ -563,8 +628,8 @@ function App() {
                   zIndex: 1000,
                   boxShadow: '-4px 0 24px rgba(0,0,0,0.6)',
                   backdropFilter: 'blur(12px)',
-                  opacity: 0, // Managed via ref
-                  pointerEvents: 'none', // Managed via ref
+                  opacity: 0,
+                  pointerEvents: 'none',
                   transition: 'opacity 0.2s ease-in-out'
                 }}
               >
@@ -577,71 +642,99 @@ function App() {
                   onChange={(e) => zoomInfo.changeZoom(parseFloat(e.target.value))}
                   className="zoom-input"
                   style={{
-                    writingMode: 'bt-lr',
                     WebkitAppearance: 'slider-vertical',
                     height: '240px',
-                    width: '24px', // Slightly wider for larger thumb
+                    width: '24px',
                     cursor: 'pointer'
                   }}
                 />
-                <div style={{
-                  color: 'white',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  fontFamily: 'sans-serif',
-                  textShadow: '0 2px 4px black',
-                  transform: 'rotate(0deg)', // Standard text
-                  writingMode: 'horizontal-tb'
-                }}>
+                <div style={{ color: 'white', fontSize: '1rem', fontWeight: 'bold' }}>
                   {zoomInfo.zoom.toFixed(1)}x
                 </div>
               </div>
             )}
           </div>
 
-          {/* Combined Timestamp and Import Toggle */}
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', margin: '1rem 0' }}>
-            <button
-              onClick={toggleTimestampMode}
-              style={{
-                background: '#333',
-                color: 'white',
-                border: '1px solid #444',
-                borderRadius: '20px',
-                padding: '0.5rem 1rem',
-                fontSize: '0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: 'pointer'
-              }}
-            >
-              <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
-            </button>
-            <button
-              onClick={triggerImport}
-              style={{
-                background: '#222',
-                color: '#aaa',
-                border: '1px solid #333',
-                borderRadius: '20px',
-                padding: '0.4rem 0.8rem',
-                fontSize: '0.8rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                cursor: 'pointer'
-              }}
-            >
-              <span>🖼️ Import Image</span>
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+              <div style={{ width: '130px', height: '40px', position: 'relative' }}>
+                <button
+                  onClick={toggleImmersiveMode}
+                  className={`immersive-toggle-btn ${immersiveTap ? 'active-floating' : ''}`}
+                  style={{
+                    background: immersiveTap ? 'var(--color-accent)' : '#333',
+                    color: 'white',
+                    border: immersiveTap ? 'none' : '1px solid #444',
+                    borderRadius: '40px',
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.9rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    cursor: 'pointer',
+                    zIndex: 10001,
+                    transition: 'background 0.3s ease, border 0.3s ease, color 0.3s ease',
+                    width: '100%',
+                    height: '100%',
+                    margin: 0,
+                    whiteSpace: 'nowrap'
+                  }}
+                  title="Tap anywhere to capture"
+                >
+                  <span>{immersiveTap ? 'Tap Mode On' : 'Tap Mode Off'}</span>
+                </button>
+              </div>
+
+              <div className={immersiveTap ? 'faded' : ''} style={{ transition: 'opacity 0.3s ease' }}>
+                <button
+                  onClick={toggleTimestampMode}
+                  style={{
+                    background: '#333',
+                    color: 'white',
+                    border: '1px solid #444',
+                    borderRadius: '40px',
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.9rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className={immersiveTap ? 'faded' : ''} style={{ transition: 'opacity 0.3s ease' }}>
+              <button
+                onClick={triggerImport}
+                style={{
+                  background: '#222',
+                  color: '#aaa',
+                  border: '1px solid #333',
+                  borderRadius: '20px',
+                  padding: '0.4rem 0.8rem',
+                  fontSize: '0.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <span>Import Image</span>
+              </button>
+            </div>
           </div>
 
-          <RecentGallery
-            photos={photos}
-            onSelect={handleSelectRecent}
-            onClear={clearPhotos}
-          />
+          <div className={immersiveTap ? 'faded' : ''} style={{ transition: 'opacity 0.3s ease' }}>
+            <RecentGallery
+              photos={photos}
+              onSelect={handleSelectRecent}
+              onClear={clearPhotos}
+            />
+          </div>
         </div>
       )}
 
@@ -676,7 +769,6 @@ function App() {
 
       {mode === 'result' && (
         <div style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '80px' }}>
-          {/* The Frame to Capture */}
           <div ref={frameRef} style={{ display: 'inline-block', position: 'relative' }}>
             <MomentFrame caption={
               <div style={{ position: 'relative', width: '100%' }}>
@@ -698,18 +790,10 @@ function App() {
                     resize: 'none',
                     overflow: 'hidden',
                     lineHeight: '1.2',
-                    height: '3rem' // Enforce 2 lines height
+                    height: '3rem'
                   }}
                 />
-                <div style={{
-                  position: 'absolute',
-                  bottom: '-25px', // Push into the bottom padding of the moment
-                  right: '0px',
-                  fontSize: '0.65rem',
-                  color: '#aaa',
-                  fontFamily: 'sans-serif',
-                  pointerEvents: 'none'
-                }}>
+                <div style={{ position: 'absolute', bottom: '-25px', right: '0px', fontSize: '0.65rem', color: '#aaa', fontFamily: 'sans-serif', pointerEvents: 'none' }}>
                   {getMaxCaptionLength(font) - caption.length}
                 </div>
               </div>
@@ -724,8 +808,6 @@ function App() {
                   filter: filterEnabled ? 'sepia(0.4) contrast(1.2) brightness(1.1) saturate(0.8)' : 'none'
                 }}
               />
-
-              {/* Timestamp Overlay for Result Mode - NOW INSIDE IMAGE AREA */}
               {timestampMode === 'overlay' && capturedTimestamp && (
                 <div style={{
                   position: 'absolute',
@@ -733,7 +815,7 @@ function App() {
                   right: '15px',
                   fontFamily: '"Courier New", monospace',
                   color: '#ff9966',
-                  fontSize: '0.9rem', // Reduced to match new scale
+                  fontSize: '0.9rem',
                   textShadow: '1px 1px 2px #000000',
                   pointerEvents: 'none',
                   zIndex: 10
@@ -742,12 +824,10 @@ function App() {
                 </div>
               )}
             </MomentFrame>
-
-            {/* Text Timestamp for Result Mode - Bottom of white border */}
             {timestampMode === 'text' && capturedTimestamp && (
               <div style={{
                 position: 'absolute',
-                bottom: '20px', // Bottom of white border
+                bottom: '20px',
                 left: '50%',
                 transform: 'translateX(-50%)',
                 fontFamily: font,
@@ -762,7 +842,6 @@ function App() {
             )}
           </div>
 
-          {/* Controls */}
           <div style={{ background: '#222', padding: '1rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#aaa' }}>Font Style</label>
@@ -786,41 +865,39 @@ function App() {
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* Timestamp Toggle (Result Mode) */}
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <button
-              onClick={toggleTimestampMode}
-              style={{
-                background: '#333',
-                color: 'white',
-                border: '1px solid #444',
-                borderRadius: '20px',
-                padding: '0.4rem 0.8rem',
-                fontSize: '0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: 'pointer'
-              }}
-            >
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <button
+                onClick={toggleTimestampMode}
+                style={{
+                  background: '#333',
+                  color: 'white',
+                  border: '1px solid #444',
+                  borderRadius: '20px',
+                  padding: '0.4rem 0.8rem',
+                  fontSize: '0.9rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
+              </button>
+            </div>
 
-              <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button onClick={reset} style={{ flex: 1, padding: '0.8rem', background: '#444', color: 'white', border: 'none', borderRadius: '4px' }}>
-              New Photo
-            </button>
-            <button onClick={handleSave} style={{ flex: 1, padding: '0.8rem', background: 'var(--color-accent)', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
-              Share Moment
-            </button>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button onClick={reset} style={{ flex: 1, padding: '0.8rem', background: '#444', color: 'white', border: 'none', borderRadius: '4px' }}>
+                New Photo
+              </button>
+              <button onClick={handleSave} style={{ flex: 1, padding: '0.8rem', background: 'var(--color-accent)', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
+                Share Moment
+              </button>
+            </div>
           </div>
         </div>
-      )
-      }
+      )}
+
       <style>{`
         @keyframes develop {
           0% { filter: brightness(0) blur(20px) grayscale(1); }
@@ -837,14 +914,32 @@ function App() {
           to { opacity: 1; }
         }
         @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .faded {
+          opacity: 0 !important;
+          pointer-events: none !important;
+          transition: opacity 0.4s ease-out !important;
+        }
+        .active-floating {
+          position: fixed !important;
+          top: 20px !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+          width: 140px !important;
+          height: 40px !important;
+          margin: 0 !important;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
+          animation: slideDownIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          z-index: 10001 !important;
+        }
+        @keyframes slideDownIn {
+          from { transform: translateX(-50%) translateY(-50px); opacity: 0; }
+          to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        .immersive-active {
+          cursor: pointer !important;
         }
         .zoom-input::-webkit-slider-thumb {
           -webkit-appearance: none;
@@ -866,6 +961,29 @@ function App() {
           border: 2px solid #555;
           box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
+        .app-header {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-bottom: 2rem;
+          text-align: center;
+          transition: opacity 0.4s ease-out;
+        }
+        .app-header h1 {
+          margin: 0;
+          font-size: 2.5rem;
+          letter-spacing: -1px;
+        }
+        .controls-group {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+          margin: 1rem 0;
+          transition: opacity 0.3s ease;
+        }
       `}</style>
 
       {/* Global Flash Overlay */}
@@ -880,9 +998,12 @@ function App() {
         pointerEvents: 'none',
         transition: 'opacity 0.1s ease-out',
         zIndex: 99999
-      }}
-      />
-      <InstallPrompt />
+      }} />
+
+      <div className={immersiveTap && mode === 'camera' && cameraEnabled ? 'faded' : ''}>
+        <InstallPrompt />
+      </div>
+
       <input
         type="file"
         ref={fileInputRef}
@@ -890,8 +1011,32 @@ function App() {
         accept="image/*"
         style={{ display: 'none' }}
       />
-    </main >
-  )
+
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '100px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(0, 0, 0, 0.8)',
+          color: 'white',
+          padding: '0.8rem 1.5rem',
+          borderRadius: '30px',
+          fontSize: '0.9rem',
+          zIndex: 10000,
+          textAlign: 'center',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(5px)',
+          animation: 'fadeIn 0.3s ease-out',
+          maxWidth: '80%',
+          pointerEvents: 'none'
+        }}>
+          {toast}
+        </div>
+      )}
+    </main>
+  );
 }
 
 export default App

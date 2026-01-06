@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCamera } from '../hooks/useCamera';
 
-const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, onFlash, timestampMode, onZoomUpdate }) => {
+const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, onFlash, timestampMode, onZoomUpdate, immersiveTap, globalCaptureTrigger }) => {
   const {
     videoRef,
     error,
@@ -16,22 +16,16 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
     changeZoom
   } = useCamera(shouldStart);
 
+  const [isImmersive, setIsImmersive] = React.useState(false);
+  const [currentTime, setCurrentTime] = React.useState(new Date());
+
   React.useEffect(() => {
     if (onZoomUpdate) {
       onZoomUpdate({ zoom, zoomRange, changeZoom, isReady });
     }
   }, [zoom, zoomRange, changeZoom, isReady, onZoomUpdate]);
-  const [isImmersive, setIsImmersive] = React.useState(false);
-  const [currentTime, setCurrentTime] = React.useState(new Date());
 
-  React.useEffect(() => {
-    if (timestampMode === 'overlay') {
-      const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-      return () => clearInterval(timer);
-    }
-  }, [timestampMode]);
-
-  const handleCapture = async () => {
+  const handleCapture = React.useCallback(async () => {
     // Trigger visual flash if flash is enabled (regardless of camera type)
     if (flashEnabled && onFlash) {
       onFlash();
@@ -45,13 +39,32 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
     if (photo) {
       onCapture(photo);
     }
-  };
+  }, [flashEnabled, onFlash, takePhoto, onCapture]);
+
+  React.useEffect(() => {
+    if (timestampMode === 'overlay') {
+      const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [timestampMode]);
+
+  // Handle global capture trigger from App.jsx
+  React.useEffect(() => {
+    if (globalCaptureTrigger > 0) {
+      handleCapture();
+    }
+  }, [globalCaptureTrigger, handleCapture]);
 
   const toggleImmersive = () => {
     setIsImmersive(!isImmersive);
   };
 
   const handlePreviewClick = () => {
+    if (immersiveTap) {
+      // Let App.jsx handle the global tap if we want it to be truly global
+      // but we need to stop propagation if we don't want double triggers
+      return;
+    }
     if (isImmersive) {
       setIsImmersive(false);
     }
@@ -86,9 +99,9 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
         )}
       </div>
 
-      {/* Immersive Mode Toggle (Top Left) */}
+      {/* Immersive Mode Toggle (Top Left) - Hidden if Tap Mode is on */}
       <button
-        className={`control-btn immersive-btn ${isImmersive ? 'hidden' : ''}`}
+        className={`control-btn immersive-btn ${(isImmersive || immersiveTap) ? 'hidden' : ''}`}
         onClick={toggleImmersive}
         aria-label="Immersive mode"
       >
@@ -100,7 +113,7 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
       {/* Flash Toggle (Top Right) */}
 
       <button
-        className={`control-btn flash-btn ${isImmersive ? 'hidden' : ''} ${!flashEnabled ? 'flash-disabled' : ''}`}
+        className={`control-btn flash-btn ${(isImmersive || immersiveTap) ? 'hidden' : ''} ${!flashEnabled ? 'flash-disabled' : ''}`}
         onClick={toggleFlash}
         aria-label="Toggle flash"
       >
@@ -109,10 +122,10 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
 
       {/* Filter Toggle (Bottom Left, moved up slightly) */}
       <button
-        className={`control-btn filter-btn ${isImmersive ? 'hidden' : ''}`}
+        className={`control-btn filter-btn ${(isImmersive || immersiveTap) ? 'hidden' : ''}`}
         onClick={onToggleFilter}
         aria-label="Toggle filter"
-        style={isImmersive ? {} : { opacity: filterEnabled ? 1 : 0.5 }}
+        style={(isImmersive || immersiveTap) ? {} : { opacity: filterEnabled ? 1 : 0.5 }}
       >
         ✨
       </button>
@@ -120,9 +133,9 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
       {/* Timestamp Toggle (Bottom Left, next to filter) - REMOVED */}
 
 
-      {/* Shutter (Center) */}
+      {/* Shutter (Center) - Hidden if Tap Mode is on */}
       <button
-        className={`shutter-btn ${isImmersive ? 'immersive-shutter' : ''}`}
+        className={`shutter-btn ${isImmersive ? 'immersive-shutter' : ''} ${immersiveTap ? 'hidden-shutter' : ''}`}
         onClick={handleCapture}
         disabled={!isReady}
         aria-label="Take photo"
@@ -132,7 +145,7 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
 
       {/* Switch Camera (Bottom Right, moved up slightly) */}
       <button
-        className={`control-btn switch-btn ${isImmersive ? 'hidden' : ''}`}
+        className={`control-btn switch-btn ${(isImmersive || immersiveTap) ? 'hidden' : ''}`}
         onClick={switchCamera}
         aria-label="Switch camera"
       >
@@ -163,7 +176,7 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
         .viewfinder {
           width: 100%;
           height: 100%;
-          cursor: ${isImmersive ? 'pointer' : 'default'};
+          cursor: ${(isImmersive || immersiveTap) ? 'pointer' : 'default'};
         }
         .shutter-btn {
           position: absolute;
@@ -180,6 +193,11 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
           align-items: center;
           transition: transform 0.1s, opacity 0.3s;
           z-index: 2;
+        }
+        .hidden-shutter {
+          opacity: 0;
+          pointer-events: none;
+          transform: translateX(-50%) scale(0.5);
         }
         .immersive-shutter {
           opacity: 0.3;
