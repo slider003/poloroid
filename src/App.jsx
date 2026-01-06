@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react'
 import './index.css'
 
 const saveAsDownload = (canvas, filename) => {
@@ -45,7 +45,10 @@ function App() {
   const [timestampMode, setTimestampMode] = useState('overlay'); // 'off', 'overlay', 'text'
   const [capturedTimestamp, setCapturedTimestamp] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [zoomInfo, setZoomInfo] = useState(null);
   const frameRef = useRef(null);
+  const cameraAreaRef = useRef(null);
+  const zoomSliderRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const { photos, addPhoto, updatePhoto, clearPhotos } = useRecentPhotos();
@@ -299,7 +302,35 @@ function App() {
 
   const handleSave = () => saveCurrentMoment(true);
 
-  // Toggle Timestamp Mode
+  // Calculate zoom slider position to align with camera area
+  useLayoutEffect(() => {
+    const updatePosition = () => {
+      if (!cameraAreaRef.current || !zoomSliderRef.current) return;
+
+      if (!zoomInfo?.isReady) {
+        zoomSliderRef.current.style.opacity = '0';
+        zoomSliderRef.current.style.pointerEvents = 'none';
+        return;
+      }
+
+      const rect = cameraAreaRef.current.getBoundingClientRect();
+      const newTop = rect.top + (rect.height / 2);
+
+      zoomSliderRef.current.style.top = `${newTop}px`;
+      zoomSliderRef.current.style.opacity = '1';
+      zoomSliderRef.current.style.pointerEvents = 'auto';
+    };
+
+    updatePosition();
+
+    window.addEventListener('scroll', updatePosition, { passive: true });
+    window.addEventListener('resize', updatePosition, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [zoomInfo?.isReady, mode]);
   const toggleTimestampMode = () => {
     const modes = ['overlay', 'text', 'off'];
     const nextIndex = (modes.indexOf(timestampMode) + 1) % modes.length;
@@ -495,17 +526,78 @@ function App() {
       )}
 
       {mode === 'camera' && cameraEnabled && (
-        <div style={{ width: '100%', maxWidth: '400px', paddingBottom: '80px' }}>
-          <MomentFrame caption={timestampMode === 'text' ? getCurrentTimestampDisplay() : "Ready to snap"}>
-            <Camera
-              onCapture={handleCapture}
-              filterEnabled={filterEnabled}
-              onToggleFilter={() => setFilterEnabled(!filterEnabled)}
-              shouldStart={cameraEnabled}
-              onFlash={handleFlash}
-              timestampMode={timestampMode}
-            />
-          </MomentFrame>
+        <div style={{ width: '100%', maxWidth: '400px', paddingBottom: '80px', position: 'relative' }}>
+          <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <MomentFrame caption={timestampMode === 'text' ? getCurrentTimestampDisplay() : "Ready to snap"}>
+              <div ref={cameraAreaRef} style={{ width: '100%', height: '100%' }}>
+                <Camera
+                  onCapture={handleCapture}
+                  filterEnabled={filterEnabled}
+                  onToggleFilter={() => setFilterEnabled(!filterEnabled)}
+                  shouldStart={cameraEnabled}
+                  onFlash={handleFlash}
+                  timestampMode={timestampMode}
+                  onZoomUpdate={setZoomInfo}
+                />
+              </div>
+            </MomentFrame>
+
+            {/* External Zoom Slider - Connected to Right Side of Phone */}
+            {zoomInfo?.zoomRange && (
+              <div
+                ref={zoomSliderRef}
+                style={{
+                  position: 'fixed',
+                  right: '0',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'rgba(0, 0, 0, 0.85)',
+                  padding: '24px 8px 24px 12px',
+                  borderRadius: '30px 0 0 30px', // Cutoff on right
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRight: 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '15px',
+                  zIndex: 1000,
+                  boxShadow: '-4px 0 24px rgba(0,0,0,0.6)',
+                  backdropFilter: 'blur(12px)',
+                  opacity: 0, // Managed via ref
+                  pointerEvents: 'none', // Managed via ref
+                  transition: 'opacity 0.2s ease-in-out'
+                }}
+              >
+                <input
+                  type="range"
+                  min={zoomInfo.zoomRange.min}
+                  max={zoomInfo.zoomRange.max}
+                  step={zoomInfo.zoomRange.step}
+                  value={zoomInfo.zoom}
+                  onChange={(e) => zoomInfo.changeZoom(parseFloat(e.target.value))}
+                  className="zoom-input"
+                  style={{
+                    writingMode: 'bt-lr',
+                    WebkitAppearance: 'slider-vertical',
+                    height: '240px',
+                    width: '24px', // Slightly wider for larger thumb
+                    cursor: 'pointer'
+                  }}
+                />
+                <div style={{
+                  color: 'white',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  fontFamily: 'sans-serif',
+                  textShadow: '0 2px 4px black',
+                  transform: 'rotate(0deg)', // Standard text
+                  writingMode: 'horizontal-tb'
+                }}>
+                  {zoomInfo.zoom.toFixed(1)}x
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Combined Timestamp and Import Toggle */}
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', margin: '1rem 0' }}>
@@ -753,6 +845,26 @@ function App() {
             opacity: 1;
             transform: translateY(0);
           }
+        }
+        .zoom-input::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 32px;
+          height: 32px;
+          background: white;
+          border-radius: 50%;
+          cursor: pointer;
+          border: 2px solid #555;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .zoom-input::-moz-range-thumb {
+          width: 32px;
+          height: 32px;
+          background: white;
+          border-radius: 50%;
+          cursor: pointer;
+          border: 2px solid #555;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
       `}</style>
 

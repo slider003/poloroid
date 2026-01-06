@@ -16,6 +16,8 @@ export const useCamera = (shouldStart = true) => {
     const [facingMode, setFacingMode] = useState(() => localStorage.getItem(CAMERA_FACING_MODE_KEY) || 'user');
     const [supportsFlash, setSupportsFlash] = useState(false);
     const [flashEnabled, setFlashEnabled] = useState(true); // User preference
+    const [zoom, setZoom] = useState(1);
+    const [zoomRange, setZoomRange] = useState(null); // { min, max, step }
 
     useEffect(() => {
         if (!shouldStart) return;
@@ -47,6 +49,18 @@ export const useCamera = (shouldStart = true) => {
                         setSupportsFlash(true);
                     } else {
                         setSupportsFlash(false);
+                    }
+
+                    if (capabilities.zoom) {
+                        setZoomRange({
+                            min: capabilities.zoom.min,
+                            max: capabilities.zoom.max,
+                            step: capabilities.zoom.step || 0.1
+                        });
+                        setZoom(capabilities.zoom.min || 1);
+                    } else {
+                        setZoomRange(null);
+                        setZoom(1);
                     }
                 }
 
@@ -91,8 +105,26 @@ export const useCamera = (shouldStart = true) => {
             localStorage.setItem(CAMERA_FACING_MODE_KEY, newMode);
             return newMode;
         });
-        // Keep flash enabled preference, but it won't trigger on front cam if not supported
+        // Reset zoom when switching
+        setZoom(1);
+        setZoomRange(null);
     }, []);
+
+    const changeZoom = useCallback(async (level) => {
+        if (!stream) return;
+        const track = stream.getVideoTracks()[0];
+        if (!track || !zoomRange) return;
+
+        // Constraint values to range
+        const safeLevel = Math.max(zoomRange.min, Math.min(zoomRange.max, level));
+
+        try {
+            await track.applyConstraints({ advanced: [{ zoom: safeLevel }] });
+            setZoom(safeLevel);
+        } catch (err) {
+            console.warn("Could not set zoom:", err);
+        }
+    }, [stream, zoomRange]);
 
     const toggleFlash = useCallback(() => {
         setFlashEnabled(prev => !prev);
@@ -146,5 +178,5 @@ export const useCamera = (shouldStart = true) => {
         return canvas.toDataURL('image/jpeg', 0.9);
     }, [isReady, facingMode, flashEnabled, supportsFlash, stream]);
 
-    return { videoRef, error, isReady, takePhoto, switchCamera, facingMode, supportsFlash, flashEnabled, toggleFlash };
+    return { videoRef, error, isReady, takePhoto, switchCamera, facingMode, supportsFlash, flashEnabled, toggleFlash, zoom, zoomRange, changeZoom };
 };

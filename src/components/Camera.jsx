@@ -1,8 +1,26 @@
 import React from 'react';
 import { useCamera } from '../hooks/useCamera';
 
-const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, onFlash, timestampMode }) => {
-  const { videoRef, error, isReady, takePhoto, switchCamera, flashEnabled, toggleFlash, facingMode } = useCamera(shouldStart);
+const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, onFlash, timestampMode, onZoomUpdate }) => {
+  const {
+    videoRef,
+    error,
+    isReady,
+    takePhoto,
+    switchCamera,
+    flashEnabled,
+    toggleFlash,
+    facingMode,
+    zoom,
+    zoomRange,
+    changeZoom
+  } = useCamera(shouldStart);
+
+  React.useEffect(() => {
+    if (onZoomUpdate) {
+      onZoomUpdate({ zoom, zoomRange, changeZoom, isReady });
+    }
+  }, [zoom, zoomRange, changeZoom, isReady, onZoomUpdate]);
   const [isImmersive, setIsImmersive] = React.useState(false);
   const [currentTime, setCurrentTime] = React.useState(new Date());
 
