@@ -46,6 +46,7 @@ function App() {
   const [capturedTimestamp, setCapturedTimestamp] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const frameRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const { photos, addPhoto, updatePhoto, clearPhotos } = useRecentPhotos();
 
@@ -67,6 +68,32 @@ function App() {
     setTimeout(() => {
       setMode('result');
     }, 10000);
+  };
+
+  const handleImport = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPhoto(event.target.result);
+      // Use date/time of upload
+      setCapturedTimestamp(new Date());
+      setCurrentPhotoId(null);
+      setMode('developing');
+
+      // Visual wait (10s)
+      setTimeout(() => {
+        setMode('result');
+      }, 10000);
+    };
+    reader.readAsDataURL(file);
+    // Reset input so the same file can be picked again
+    e.target.value = '';
+  };
+
+  const triggerImport = () => {
+    fileInputRef.current?.click();
   };
 
 
@@ -98,8 +125,29 @@ function App() {
 
       const imgSize = width - (padding * 2);
 
-      // Draw raw image first
-      ctx.drawImage(img, padding, padding, imgSize, imgSize);
+      // Draw image with "cover" logic - crop to center
+      const imgAspect = img.width / img.height;
+      let drawX = padding;
+      let drawY = padding;
+      let drawWidth = imgSize;
+      let drawHeight = imgSize;
+
+      let sourceX = 0;
+      let sourceY = 0;
+      let sourceWidth = img.width;
+      let sourceHeight = img.height;
+
+      if (imgAspect > 1) {
+        // Landscape - crop sides
+        sourceWidth = img.height;
+        sourceX = (img.width - sourceWidth) / 2;
+      } else if (imgAspect < 1) {
+        // Portrait - crop top/bottom
+        sourceHeight = img.width;
+        sourceY = (img.height - sourceHeight) / 2;
+      }
+
+      ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, drawX, drawY, drawWidth, drawHeight);
 
       // 3. Apply Pixel Filter
       if (filterEnabled) {
@@ -389,6 +437,7 @@ function App() {
                 Turn on camera
               </button>
 
+
               <div style={{ marginTop: '1rem', padding: '0 1rem' }}>
                 <p style={{ color: '#666', fontSize: '0.75rem', margin: 0 }}>
                   <strong>iOS Tip:</strong> To skip asking for permission:
@@ -400,7 +449,7 @@ function App() {
           </MomentFrame>
 
           {/* Timestamp Toggle (Outside Frame) */}
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', margin: '1rem 0' }}>
             <button
               onClick={toggleTimestampMode}
               style={{
@@ -416,8 +465,24 @@ function App() {
                 cursor: 'pointer'
               }}
             >
-
               <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
+            </button>
+            <button
+              onClick={triggerImport}
+              style={{
+                background: '#222',
+                color: '#aaa',
+                border: '1px solid #333',
+                borderRadius: '20px',
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.8rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                cursor: 'pointer'
+              }}
+            >
+              <span>🖼️ Import Image</span>
             </button>
           </div>
 
@@ -442,8 +507,8 @@ function App() {
             />
           </MomentFrame>
 
-          {/* Timestamp Toggle (Outside Frame) */}
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
+          {/* Combined Timestamp and Import Toggle */}
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', margin: '1rem 0' }}>
             <button
               onClick={toggleTimestampMode}
               style={{
@@ -459,8 +524,24 @@ function App() {
                 cursor: 'pointer'
               }}
             >
-
               <span>Timestamp: {timestampMode === 'off' ? 'Off' : (timestampMode === 'overlay' ? 'Overlay' : 'Text')}</span>
+            </button>
+            <button
+              onClick={triggerImport}
+              style={{
+                background: '#222',
+                color: '#aaa',
+                border: '1px solid #333',
+                borderRadius: '20px',
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.8rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                cursor: 'pointer'
+              }}
+            >
+              <span>🖼️ Import Image</span>
             </button>
           </div>
 
@@ -646,7 +727,8 @@ function App() {
             </button>
           </div>
         </div>
-      )}
+      )
+      }
       <style>{`
         @keyframes develop {
           0% { filter: brightness(0) blur(20px) grayscale(1); }
@@ -689,7 +771,14 @@ function App() {
       }}
       />
       <InstallPrompt />
-    </main>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImport}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
+    </main >
   )
 }
 

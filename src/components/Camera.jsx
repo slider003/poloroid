@@ -121,6 +121,7 @@ const Camera = ({ onCapture, filterEnabled, onToggleFilter, shouldStart = true, 
         🔄
       </button>
 
+
       <style>{`
         .camera-container {
           position: relative;
