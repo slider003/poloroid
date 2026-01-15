@@ -866,7 +866,25 @@ function App() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+              <button
+                onClick={() => setFilterEnabled(!filterEnabled)}
+                style={{
+                  background: '#333',
+                  color: 'white',
+                  border: '1px solid #444',
+                  borderRadius: '20px',
+                  padding: '0.4rem 0.8rem',
+                  fontSize: '0.9rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <span>Filter: {filterEnabled ? 'On' : 'Off'}</span>
+              </button>
+
               <button
                 onClick={toggleTimestampMode}
                 style={{
